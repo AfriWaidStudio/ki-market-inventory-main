@@ -4,7 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Badge } from "@/components/StatCard";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { CyberBadge } from "@/components/ui/CyberBadge";
+import { CyberButton } from "@/components/ui/CyberButton";
+import { CyberInput } from "@/components/ui/CyberInput";
 import { fmtMoney, fmtNumber } from "@/lib/currency";
 import {
   listTrades,
@@ -12,6 +15,7 @@ import {
   markClosed,
   cancelTrade,
 } from "@/lib/trades.functions";
+import { Activity, XCircle, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades")({
   head: () => ({ meta: [{ title: "Active Trades — KI Market Inventory" }] }),
@@ -76,108 +80,126 @@ function TradesPage() {
 
   return (
     <AppShell title="Active Trades">
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 shadow-[0_0_15px_rgba(6,182,212,0.4)] flex items-center justify-center border border-white/20">
+            <Activity className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm">Open Positions</h2>
+        </div>
+        <CyberBadge variant={rows.length > 0 ? "info" : "default"}>
+          {rows.length} {rows.length === 1 ? 'Trade' : 'Trades'}
+        </CyberBadge>
+      </div>
+
+      <GlassCard className="p-0 lg:p-0">
         {rows.length === 0 ? (
-          <div className="p-12 text-center text-sm text-muted-foreground">
-            No active trades. Open one from the <Link to="/scanner" className="text-primary underline">Scanner</Link>.
+          <div className="p-16 text-center">
+            <Activity className="w-12 h-12 text-cyan-400 mx-auto mb-4 opacity-50 drop-shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+            <p className="text-sm font-medium text-slate-400">
+              No active trades. Open one from the <Link to="/scanner" className="text-cyan-400 font-bold hover:underline">Scanner</Link>.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted/30 text-xs uppercase text-muted-foreground">
+              <thead className="bg-black/40 text-xs uppercase tracking-wider font-bold text-slate-500 border-b border-white/5">
                 <tr>
-                  <th className="text-left py-3 px-4">Route</th>
-                  <th className="text-center py-3 px-4">Type</th>
-                  <th className="text-left py-3 px-4">Stage</th>
-                  <th className="text-right py-3 px-4">Amount</th>
-                  <th className="text-right py-3 px-4">Buy</th>
-                  <th className="text-right py-3 px-4">Exp. sell</th>
-                  <th className="text-right py-3 px-4">Exp. profit</th>
-                  <th className="text-center py-3 px-4">Confidence</th>
-                  <th className="text-left py-3 px-4">Open for</th>
-                  <th className="text-right py-3 px-4">Actions</th>
+                  <th className="text-left py-4 px-6">Route</th>
+                  <th className="text-center py-4 px-6">Type</th>
+                  <th className="text-left py-4 px-6">Stage</th>
+                  <th className="text-right py-4 px-6">Amount</th>
+                  <th className="text-right py-4 px-6">Buy</th>
+                  <th className="text-right py-4 px-6">Exp. sell</th>
+                  <th className="text-right py-4 px-6">Exp. profit</th>
+                  <th className="text-center py-4 px-6">Confidence</th>
+                  <th className="text-left py-4 px-6">Open for</th>
+                  <th className="text-right py-4 px-6">Actions</th>
                 </tr>
               </thead>
-              <tbody className="tabular-nums">
-                {rows.map((t) => (
+              <tbody className="tabular-nums font-medium">
+                {rows.map((t: any) => (
                   <Fragment key={t.id}>
-                    <tr className="border-t border-border">
-                      <td className="py-3 px-4">
-                        <Link to="/trades/$tradeId" params={{ tradeId: t.id }} className="text-foreground hover:text-primary">
+                    <tr className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-6">
+                        <Link to="/trades/$tradeId" params={{ tradeId: t.id }} className="text-cyan-400 font-bold hover:underline drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
                           {t.route}
                         </Link>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge tone={t.trade_type === "paper" ? "info" : "profit"}>
+                      <td className="py-4 px-6 text-center">
+                        <CyberBadge variant={t.trade_type === "paper" ? "info" : "profit"}>
                           {t.trade_type === "paper" ? "paper" : "manual"}
-                        </Badge>
+                        </CyberBadge>
                       </td>
-                      <td className="py-3 px-4 text-xs text-muted-foreground">
+                      <td className="py-4 px-6 text-xs text-slate-400 capitalize">
                         {String(t.stage ?? t.status).replaceAll("_", " ")}
                       </td>
-                      <td className="py-3 px-4 text-right">{fmtNumber(Number(t.amount), 0)} {t.asset}</td>
-                      <td className="py-3 px-4 text-right">{fmtMoney(Number(t.buy_price), t.currency)}</td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-4 px-6 text-right text-slate-300">{fmtNumber(Number(t.amount), 0)} {t.asset}</td>
+                      <td className="py-4 px-6 text-right text-slate-300">{fmtMoney(Number(t.buy_price), t.currency)}</td>
+                      <td className="py-4 px-6 text-right">
                         {editing === t.id ? (
-                          <div className="flex gap-1 justify-end">
-                            <input type="number" step="0.01" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
-                              className="w-24 rounded border border-input bg-input px-2 py-1 text-right text-sm" />
-                            <button onClick={() => doUpdate.mutate({ id: t.id, price: Number(priceInput) })}
-                              className="rounded bg-primary px-2 text-xs text-primary-foreground">Save</button>
+                          <div className="flex gap-2 justify-end items-center">
+                            <CyberInput type="number" step="0.01" value={priceInput} onChange={(e) => setPriceInput(e.target.value)}
+                              className="w-24 text-right py-1.5 px-2 bg-black/60" />
+                            <CyberButton onClick={() => doUpdate.mutate({ id: t.id, price: Number(priceInput) })}
+                              className="px-3 py-1.5 h-auto text-xs">Save</CyberButton>
                           </div>
                         ) : (
                           <button onClick={() => { setEditing(t.id); setPriceInput(String(t.expected_sell_price ?? "")); }}
-                            className="hover:text-primary">{fmtMoney(Number(t.expected_sell_price), t.currency)}</button>
+                            className="text-slate-300 hover:text-cyan-400 transition-colors border-b border-dashed border-slate-600 hover:border-cyan-400 pb-0.5">
+                            {fmtMoney(Number(t.expected_sell_price), t.currency)}
+                          </button>
                         )}
                       </td>
-                      <td className={`py-3 px-4 text-right ${Number(t.expected_profit) >= 0 ? "text-[color:var(--profit)]" : "text-[color:var(--loss)]"}`}>
+                      <td className={`py-4 px-6 text-right font-bold ${Number(t.expected_profit) >= 0 ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" : "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.3)]"}`}>
                         {fmtMoney(Number(t.expected_profit), t.currency)}
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge tone={Number(t.confidence_score) >= 70 ? "profit" : Number(t.confidence_score) >= 50 ? "info" : "warning"}>
+                      <td className="py-4 px-6 text-center">
+                        <CyberBadge variant={Number(t.confidence_score) >= 70 ? "profit" : Number(t.confidence_score) >= 50 ? "info" : "warning"}>
                           {fmtNumber(Number(t.confidence_score), 0)}%
-                        </Badge>
+                        </CyberBadge>
                       </td>
-                      <td className="py-3 px-4 text-xs text-muted-foreground">
+                      <td className="py-4 px-6 text-xs font-bold text-slate-400">
                         {timeAgo(t.buy_time as string)}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex gap-1 justify-end">
-                          <button onClick={() => { setClosingId(t.id); setActualPrice(String(t.expected_sell_price ?? "")); setFinalFees(String(t.estimated_fees ?? "0")); setAmountSold(String(t.remaining_amount ?? t.amount)); }}
-                            className="rounded border border-primary/40 px-2 py-1 text-xs text-primary hover:bg-primary/10">
-                            {t.trade_type === "paper" ? "Paper Close" : "I Closed"}
-                          </button>
-                          <button onClick={() => doCancel.mutate(t.id)}
-                            className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted">Cancel</button>
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex gap-2 justify-end">
+                          <CyberButton variant="secondary" onClick={() => { setClosingId(t.id); setActualPrice(String(t.expected_sell_price ?? "")); setFinalFees(String(t.estimated_fees ?? "0")); setAmountSold(String(t.remaining_amount ?? t.amount)); }}
+                            className="px-3 py-1.5 h-auto text-xs border-cyan-500/30 hover:border-cyan-500/60 text-cyan-400">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t.trade_type === "paper" ? "Paper Close" : "Close"}
+                          </CyberButton>
+                          <CyberButton variant="ghost" onClick={() => doCancel.mutate(t.id)}
+                            className="px-2 py-1.5 h-auto text-xs text-rose-400 hover:bg-rose-500/10">
+                            <XCircle className="w-3.5 h-3.5" />
+                          </CyberButton>
                         </div>
                       </td>
                     </tr>
                     {closingId === t.id && (
-                      <tr className="bg-muted/20">
-                        <td colSpan={10} className="p-4">
-                          <div className="flex flex-wrap items-end gap-3">
-                            <label className="text-sm">
-                              <div className="text-xs uppercase text-muted-foreground">Amount sold</div>
-                              <input type="number" step="0.000001" value={amountSold} onChange={(e) => setAmountSold(e.target.value)}
-                                className="mt-1 w-32 rounded border border-input bg-input px-2 py-1.5" />
+                      <tr className="bg-black/40 shadow-inner">
+                        <td colSpan={10} className="px-6 py-5 border-t border-b border-cyan-500/20 relative">
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500/50" />
+                          <div className="flex flex-wrap items-end gap-4">
+                            <label className="text-sm flex-1 max-w-[140px]">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Amount sold</div>
+                              <CyberInput type="number" step="0.000001" value={amountSold} onChange={(e) => setAmountSold(e.target.value)} />
                             </label>
-                            <label className="text-sm">
-                              <div className="text-xs uppercase text-muted-foreground">Actual sell price</div>
-                              <input type="number" step="0.01" value={actualPrice} onChange={(e) => setActualPrice(e.target.value)}
-                                className="mt-1 w-32 rounded border border-input bg-input px-2 py-1.5" />
+                            <label className="text-sm flex-1 max-w-[140px]">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Actual sell price</div>
+                              <CyberInput type="number" step="0.01" value={actualPrice} onChange={(e) => setActualPrice(e.target.value)} />
                             </label>
-                            <label className="text-sm">
-                              <div className="text-xs uppercase text-muted-foreground">Final fees</div>
-                              <input type="number" step="0.01" value={finalFees} onChange={(e) => setFinalFees(e.target.value)}
-                                className="mt-1 w-32 rounded border border-input bg-input px-2 py-1.5" />
+                            <label className="text-sm flex-1 max-w-[140px]">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Final fees</div>
+                              <CyberInput type="number" step="0.01" value={finalFees} onChange={(e) => setFinalFees(e.target.value)} />
                             </label>
-                            <button onClick={() => doClose.mutate({ id: t.id, price: Number(actualPrice), fees: Number(finalFees), amountSold: Number(amountSold) || undefined })}
+                            <CyberButton onClick={() => doClose.mutate({ id: t.id, price: Number(actualPrice), fees: Number(finalFees), amountSold: Number(amountSold) || undefined })}
                               disabled={!actualPrice || doClose.isPending}
-                              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
-                              {t.trade_type === "paper" ? "Confirm paper close" : "Confirm external close"}
-                            </button>
-                            <button onClick={() => setClosingId(null)}
-                              className="rounded-md border border-border px-3 py-2 text-sm">Cancel</button>
+                              className="px-6">
+                              {t.trade_type === "paper" ? "Confirm Paper Close" : "Confirm Trade Close"}
+                            </CyberButton>
+                            <CyberButton variant="ghost" onClick={() => setClosingId(null)} className="px-4 text-slate-400">
+                              Cancel
+                            </CyberButton>
                           </div>
                         </td>
                       </tr>
@@ -188,7 +210,7 @@ function TradesPage() {
             </table>
           </div>
         )}
-      </div>
+      </GlassCard>
     </AppShell>
   );
 }

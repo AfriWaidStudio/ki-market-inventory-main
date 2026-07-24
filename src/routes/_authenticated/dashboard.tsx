@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
+import { InferenceInbox } from "@/components/InferenceInbox";
 import { StatCard, Badge } from "@/components/StatCard";
 import { fmtMoney, fmtNumber } from "@/lib/currency";
 import { dashboardSummary } from "@/lib/analytics.functions";
+import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — KI Market Inventory" }] }),
@@ -12,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
+  const qc = useQueryClient();
   const summaryFn = useServerFn(dashboardSummary);
   const opts = queryOptions({
     queryKey: ["dashboard-summary"],
@@ -20,10 +24,32 @@ function DashboardPage() {
   const { data } = useSuspenseQuery(opts);
   const c = data.currency;
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'market_inventory_inferences' },
+        () => { qc.invalidateQueries({ queryKey: ["inferences"] }); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'market_inventory_exchange_transactions' },
+        () => { qc.invalidateQueries({ queryKey: ["dashboard-summary"] }); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+
   return (
     <AppShell title="Command Center">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Manual capital active" value={fmtMoney(data.trackedCapital, c)} hint={`${data.manualActiveCount} manual active`} />
+      <InferenceInbox />
+      
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Live exchange capital (USDT)" value={fmtMoney(data.exchangeCapital, c)} tone="profit" hint="Synced live from connected exchanges" />
+        <StatCard label="Idle capital" value={fmtMoney(data.idleCapital, c)} tone={data.idleCapital > 0 ? "loss" : "default"} hint="Stablecoins not in active trades" />
+        <StatCard label="Capital in transit" value={fmtMoney(data.capitalInTransit, c)} tone={data.capitalInTransit > 0 ? "warning" : "default"} hint="Withdrawals missing deposits" />
         <StatCard label="Paper capital active" value={fmtMoney(data.paperTrackedCapital, c)} hint={`${data.paperActiveCount} paper active`} />
         <StatCard label="Today manual profit" value={fmtMoney(data.todayManualProfit, c)} tone={data.todayManualProfit >= 0 ? "profit" : "loss"} />
         <StatCard label="Today paper profit" value={fmtMoney(data.todayPaperProfit, c)} tone={data.todayPaperProfit >= 0 ? "profit" : "loss"} />
@@ -40,41 +66,49 @@ function DashboardPage() {
         <StatCard label="Worst route" value={data.worstRoute ?? "—"} tone="loss" />
       </div>
 
-      <div className="mt-8 rounded-xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Route performance</h2>
-          <Badge tone="info">{data.routeStats.length} routes</Badge>
-        </div>
-        {data.routeStats.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            No closed trades yet. Mark trades as bought on the <a href="/scanner" className="text-primary underline">Scanner</a>, then close them to build history.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="text-left py-2">Route</th>
-                  <th className="text-right py-2">Trades</th>
-                  <th className="text-right py-2">Total profit</th>
-                  <th className="text-right py-2">Avg</th>
-                </tr>
-              </thead>
-              <tbody className="tabular-nums">
-                {data.routeStats.map((r) => (
-                  <tr key={r.route} className="border-b border-border/50">
-                    <td className="py-2">{r.route}</td>
-                    <td className="text-right">{r.count}</td>
-                    <td className={`text-right ${r.profit >= 0 ? "text-[color:var(--profit)]" : "text-[color:var(--loss)]"}`}>
-                      {fmtMoney(r.profit, c)}
-                    </td>
-                    <td className="text-right">{fmtMoney(r.profit / Math.max(1, r.count), c)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="mt-10 relative group overflow-hidden rounded-[2rem] bg-slate-900/50 backdrop-blur-xl p-8 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_15px_35px_rgba(0,0,0,0.5)] transition-all">
+        {/* Glossy overlay effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm">Route performance</h2>
+            <Badge tone="info">{data.routeStats.length} routes</Badge>
           </div>
-        )}
+          
+          {data.routeStats.length === 0 ? (
+            <div className="rounded-xl bg-black/40 border border-white/5 p-8 text-center shadow-inner">
+              <p className="text-sm text-slate-400 font-medium">
+                No closed trades yet. Mark trades as bought on the <a href="/scanner" className="text-cyan-400 font-bold hover:underline drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">Scanner</a>, then close them to build history.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl bg-black/40 border border-white/5 shadow-inner">
+              <table className="w-full text-sm">
+                <thead className="text-xs font-bold uppercase tracking-wider text-slate-500 bg-black/50">
+                  <tr>
+                    <th className="text-left py-4 px-6">Route</th>
+                    <th className="text-right py-4 px-6">Trades</th>
+                    <th className="text-right py-4 px-6">Total profit</th>
+                    <th className="text-right py-4 px-6">Avg</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums font-medium">
+                  {data.routeStats.map((r) => (
+                    <tr key={r.route} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-6 text-slate-300">{r.route}</td>
+                      <td className="text-right py-4 px-6 text-slate-400">{r.count}</td>
+                      <td className={`text-right py-4 px-6 ${r.profit >= 0 ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" : "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.3)]"}`}>
+                        {fmtMoney(r.profit, c)}
+                      </td>
+                      <td className="text-right py-4 px-6 text-slate-300 font-bold">{fmtMoney(r.profit / Math.max(1, r.count), c)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </AppShell>
   );

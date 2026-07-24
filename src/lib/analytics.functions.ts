@@ -53,11 +53,17 @@ function tradeType(trade: Partial<TradeRow>): "paper" | "manual" {
 export const dashboardSummary = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const [{ data: tradeRows, error: tradeError }, { data: ledgerRows, error: ledgerError }] =
-      await Promise.all([
-        (context.supabase as any).from("market_inventory_trades").select("*").eq("user_id", context.userId),
-        (context.supabase as any).from("market_inventory_capital_ledger").select("*").eq("user_id", context.userId),
-      ]);
+    const [
+      { data: tradeRows, error: tradeError },
+      { data: ledgerRows, error: ledgerError },
+      { data: txRows, error: txError },
+      { data: balanceRows, error: balanceError }
+    ] = await Promise.all([
+      (context.supabase as any).from("market_inventory_trades").select("*").eq("user_id", context.userId),
+      (context.supabase as any).from("market_inventory_capital_ledger").select("*").eq("user_id", context.userId),
+      (context.supabase as any).from("market_inventory_exchange_transactions").select("*").eq("user_id", context.userId),
+      (context.supabase as any).from("market_inventory_exchange_balances").select("*").eq("user_id", context.userId)
+    ]);
     if (tradeError) throw new Error(tradeError.message);
     if (ledgerError && !isMissingRelation(ledgerError)) throw new Error(ledgerError.message);
 
@@ -132,10 +138,50 @@ export const dashboardSummary = createServerFn({ method: "POST" })
 
     const currency = trades[0]?.currency ?? ledger[0]?.currency ?? "NGN";
 
+    // Calculate Capital in Transit (Withdrawals in last 60 mins without matching deposits)
+    const txs = txRows ?? [];
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    let capitalInTransit = 0;
+    const recentWithdrawals = txs.filter((t: any) => t.type === 'withdrawal' && new Date(t.tx_time) >= oneHourAgo);
+    const recentDeposits = txs.filter((t: any) => t.type === 'deposit' && new Date(t.tx_time) >= oneHourAgo);
+
+    for (const w of recentWithdrawals) {
+      // Basic check: is there a deposit of similar amount (+/- 5%) after this withdrawal?
+      const match = recentDeposits.find((d: any) => 
+        new Date(d.tx_time) >= new Date(w.tx_time) && 
+        d.asset === w.asset &&
+        Math.abs(Number(d.amount) - Number(w.amount)) / Number(w.amount) < 0.05
+      );
+      if (!match) {
+        capitalInTransit += Number(w.amount);
+      }
+    }
+
+    const balances = balanceRows ?? [];
+    let exchangeCapital = 0;
+    for (const b of balances) {
+      if (b.asset === 'USDT' || b.asset === 'USDC') {
+        exchangeCapital += Number(b.free_balance) + Number(b.locked_balance);
+      }
+    }
+
+    // Mock Idle Capital calculation: Live stablecoins that are completely free (not locked in orders)
+    let idleCapital = 0;
+    for (const b of balances) {
+      if (b.asset === 'USDT' || b.asset === 'USDC') {
+        idleCapital += Number(b.free_balance);
+      }
+    }
+    if (balances.length === 0) {
+      // Fallback to original mock if no balances synced yet
+      idleCapital = totalProfit > 0 ? totalProfit * 0.1 : 0;
+    }
+
     return {
       currency,
       trackedCapital,
       paperTrackedCapital,
+      exchangeCapital,
       activeCount: active.length,
       manualActiveCount: active.filter((trade) => tradeType(trade) === "manual").length,
       paperActiveCount: active.filter((trade) => tradeType(trade) === "paper").length,
@@ -157,6 +203,8 @@ export const dashboardSummary = createServerFn({ method: "POST" })
       winRate,
       totalFees,
       routeStats: routeArr,
+      capitalInTransit,
+      idleCapital
     };
   });
 

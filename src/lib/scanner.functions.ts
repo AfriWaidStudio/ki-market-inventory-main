@@ -88,31 +88,53 @@ export const listOpportunities = createServerFn({ method: "POST" })
       reasoning: string;
     }> = [];
 
-    const estFees = 0; // manual scanner assumes 0 by default; UI can extend
     for (const b of buys) {
       for (const s of sells) {
         if (b.exchange === s.exchange) continue;
+        
+        const buyPrice = Number(b.price);
+        const sellPrice = Number(s.price);
+        const amount = data.amount;
+        
+        // Fee calculation logic
+        // Buy fee: 0.1% taker/maker fee
+        const buyFeeFiat = amount * 0.001 * buyPrice;
+        // Network transfer fee: approx 1 USDT transferred across TRC20/BEP20
+        const networkFeeFiat = 1 * sellPrice;
+        // Sell fee: 0.1% taker/maker fee on the remaining balance
+        const sellFeeFiat = Math.max(0, amount - 1) * 0.001 * sellPrice;
+        
+        const totalEstFees = buyFeeFiat + networkFeeFiat + sellFeeFiat;
+
         const score = scoreOpportunity({
-          buyPrice: Number(b.price),
-          sellPrice: Number(s.price),
-          amount: data.amount,
-          estimatedFees: estFees,
+          buyPrice,
+          sellPrice,
+          amount,
+          estimatedFees: totalEstFees,
           liquidityScore: (b.liquidity_score as number) ?? (s.liquidity_score as number) ?? null,
-          merchantCount: (b.merchant_count as number) ?? null,
-          merchantRating: (b.merchant_rating as number) ?? null,
         });
+
+        // Filter out opportunities that are unprofitable after fees
+        if (score.netProfit <= 0) continue;
+
         opps.push({
           buy_exchange: b.exchange,
           sell_exchange: s.exchange,
-          buy_price: Number(b.price),
-          sell_price: Number(s.price),
+          buy_price: buyPrice,
+          sell_price: sellPrice,
           currency: b.currency,
           buy_captured_at: b.captured_at as string,
           sell_captured_at: s.captured_at as string,
-          liquidity_score: (b.liquidity_score as number) ?? null,
-          merchant_count: (b.merchant_count as number) ?? null,
-          merchant_rating: (b.merchant_rating as number) ?? null,
-          ...score,
+          liquidity_score: (b.liquidity_score as number) ?? (s.liquidity_score as number) ?? null,
+          merchant_count: (b.merchant_count as number) ?? (s.merchant_count as number) ?? null,
+          merchant_rating: (b.merchant_rating as number) ?? (s.merchant_rating as number) ?? null,
+          spread: score.spread,
+          spreadPct: score.spreadPct,
+          netProfit: score.netProfit,
+          confidence: score.confidence,
+          risk: score.risk,
+          recommendation: score.recommendation,
+          reasoning: score.reasoning,
         });
       }
     }

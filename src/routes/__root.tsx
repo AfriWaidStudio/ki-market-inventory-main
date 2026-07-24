@@ -16,20 +16,26 @@ import { AuthProvider } from "../lib/auth";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
+    <div className="flex min-h-screen items-center justify-center px-4 bg-[#030712] text-slate-200 selection:bg-cyan-500/30 overflow-hidden relative">
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] rounded-full bg-cyan-600/10 blur-[120px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
+      </div>
+      <div className="w-full max-w-md relative z-10 text-center">
+        <div className="rounded-[2rem] border border-white/10 bg-slate-900/60 p-12 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_15px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+          <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 drop-shadow-md">404</h1>
+          <h2 className="mt-6 text-2xl font-bold text-white tracking-tight">Signal Lost</h2>
+          <p className="mt-3 text-slate-400 font-medium">
+            The opportunity you're looking for doesn't exist on this node.
+          </p>
+          <div className="mt-8">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 px-8 py-3.5 text-sm font-bold text-black shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_5px_15px_rgba(147,51,234,0.3)] hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_10px_20px_rgba(6,182,212,0.4)] active:translate-y-[2px] transition-all"
+            >
+              Return to Command Center
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -44,30 +50,34 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+    <div className="flex min-h-screen items-center justify-center px-4 bg-[#030712] text-slate-200 selection:bg-rose-500/30 overflow-hidden relative">
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] rounded-full bg-rose-600/10 blur-[120px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
+      </div>
+      <div className="w-full max-w-md relative z-10 text-center">
+        <div className="rounded-[2rem] border border-rose-500/20 bg-slate-900/60 p-12 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_15px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+          <h1 className="text-2xl font-black text-white tracking-tight">System Fault Detected</h1>
+          <p className="mt-3 text-slate-400 font-medium">
+            Something failed to execute on our end. Please recalibrate and try again.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <button
+              onClick={() => {
+                router.invalidate();
+                reset();
+              }}
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-3.5 text-sm font-bold text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_5px_15px_rgba(244,63,94,0.3)] hover:shadow-[0_10px_20px_rgba(244,63,94,0.4)] active:translate-y-[2px] transition-all"
+            >
+              Recalibrate
+            </button>
+            <a
+              href="/"
+              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-slate-800 px-8 py-3.5 text-sm font-bold text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] hover:bg-slate-700 active:translate-y-[2px] transition-all"
+            >
+              Return Home
+            </a>
+          </div>
         </div>
       </div>
     </div>

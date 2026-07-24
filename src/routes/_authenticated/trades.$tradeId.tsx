@@ -4,12 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Badge } from "@/components/StatCard";
+import { CyberBadge } from "@/components/ui/CyberBadge";
+import { CyberButton } from "@/components/ui/CyberButton";
+import { CyberInput } from "@/components/ui/CyberInput";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { fmtMoney, fmtNumber } from "@/lib/currency";
 import { addTradeFee, addTradeNote, getTrade, updateTradeStage } from "@/lib/trades.functions";
+import { BrainCircuit, BookOpen, Timeline, CalendarClock, ChevronLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades/$tradeId")({
-  head: () => ({ meta: [{ title: "Trade — KI Market Inventory" }] }),
+  head: () => ({ meta: [{ title: "Trade Details — KI Market Inventory" }] }),
   component: TradeDetailPage,
 });
 
@@ -30,6 +34,7 @@ function TradeDetailPage() {
   const [feeAmount, setFeeAmount] = useState("");
   const [feeType, setFeeType] = useState("network");
   const [stage, setStage] = useState("");
+  
   const addNote = useMutation({
     mutationFn: () => noteFn({ data: { trade_id: tradeId, note } }),
     onSuccess: () => { setNote(""); qc.invalidateQueries({ queryKey: ["trade", tradeId] }); toast.success("Note added"); },
@@ -63,8 +68,8 @@ function TradeDetailPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  if (q.isLoading) return <AppShell title="Trade"><div className="text-muted-foreground">Loading…</div></AppShell>;
-  if (!q.data) return <AppShell title="Trade"><div className="text-muted-foreground">Not found.</div></AppShell>;
+  if (q.isLoading) return <AppShell title="Trade Details"><div className="p-8 text-center text-slate-400 font-medium animate-pulse">Decrypting trade record…</div></AppShell>;
+  if (!q.data) return <AppShell title="Trade Details"><div className="p-8 text-center text-rose-400 font-bold">Record not found.</div></AppShell>;
 
   const { trade: t, notes, events, fees, ledger } = q.data;
   const p = t.realized_profit != null && Number(t.realized_profit) !== 0 ? Number(t.realized_profit) : Number(t.actual_profit ?? t.expected_profit ?? 0);
@@ -72,163 +77,143 @@ function TradeDetailPage() {
 
   return (
     <AppShell title={`Trade · ${t.route ?? ""}`}>
-      <div className="mb-4">
-        <Link to="/trades" className="text-xs text-muted-foreground hover:text-primary">← Back to active trades</Link>
+      <div className="mb-6">
+        <Link to="/trades" className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-cyan-400 transition-colors">
+          <ChevronLeft className="w-4 h-4" /> Back to open positions
+        </Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Overview</h2>
-              <div className="flex gap-2">
-                <Badge tone={t.trade_type === "paper" ? "info" : "profit"}>{t.trade_type}</Badge>
-                <Badge tone={t.status === "active" ? "info" : t.status === "closed" ? "profit" : "default"}>{t.status}</Badge>
+      <div className="grid gap-6 xl:grid-cols-3 items-start">
+        <div className="xl:col-span-2 space-y-6">
+          
+          <GlassCard className="p-6 lg:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
+              <div>
+                <h2 className="text-xl font-black text-white drop-shadow-md tracking-tight mb-2">{t.route}</h2>
+                <div className="flex flex-wrap gap-2">
+                  <CyberBadge variant={t.trade_type === "paper" ? "info" : "profit"}>{t.trade_type}</CyberBadge>
+                  <CyberBadge variant={t.status === "active" ? "info" : t.status === "closed" ? "profit" : "default"}>{t.status}</CyberBadge>
+                </div>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <Info label="Amount" value={`${fmtNumber(Number(t.amount), 0)} ${t.asset}`} />
               <Info label="Remaining" value={`${fmtNumber(Number(t.remaining_amount ?? t.amount), 6)} ${t.asset}`} />
-              <Info label="Stage" value={String(t.stage ?? t.status).replaceAll("_", " ")} />
+              <Info label="Stage" value={String(t.stage ?? t.status).replaceAll("_", " ")} className="capitalize" />
               <Info label="Buy" value={fmtMoney(Number(t.buy_price), t.currency)} />
               <Info label={isClosed ? "Actual sell" : "Expected sell"} value={fmtMoney(Number(t.actual_sell_price ?? t.expected_sell_price), t.currency)} />
               <Info label={isClosed ? "Realized P/L" : "Expected P/L"} value={fmtMoney(p, t.currency)} tone={p >= 0 ? "profit" : "loss"} />
               <Info label="Estimated fees" value={fmtMoney(Number(t.estimated_fees ?? 0), t.currency)} />
               <Info label="Recorded fees" value={fmtMoney(Number(t.total_recorded_fees ?? 0), t.currency)} />
               {t.final_fees != null && <Info label="Final fees" value={fmtMoney(Number(t.final_fees), t.currency)} />}
-              <Info label="Confidence" value={`${fmtNumber(Number(t.confidence_score), 0)}%`} />
-              <Info label="Risk" value={`${fmtNumber(Number(t.risk_score), 0)}%`} />
+              <Info label="Confidence" value={`${fmtNumber(Number(t.confidence_score), 0)}%`} tone={Number(t.confidence_score) >= 70 ? "profit" : "warning"} />
+              <Info label="Risk" value={`${fmtNumber(Number(t.risk_score), 0)}%`} tone="loss" />
               <Info label="Opened" value={new Date(t.buy_time as string).toLocaleString()} />
               {t.sell_time && <Info label="Closed" value={new Date(t.sell_time as string).toLocaleString()} />}
               {t.duration_minutes != null && <Info label="Duration" value={`${t.duration_minutes}m`} />}
-              {t.ki_accuracy_verdict && <Info label="KI verdict" value={t.ki_accuracy_verdict} />}
+              {t.ki_accuracy_verdict && <Info label="KI verdict" value={t.ki_accuracy_verdict} tone={t.ki_accuracy_verdict === 'accurate' ? 'profit' : 'warning'} />}
             </div>
-          </div>
+          </GlassCard>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">KI reasoning</h2>
-            <p className="mt-3 text-sm text-foreground/90 leading-relaxed">{t.ki_reasoning ?? "No reasoning recorded."}</p>
+          <GlassCard className="p-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm flex items-center gap-2 mb-4">
+              <BrainCircuit className="w-5 h-5 text-purple-400" /> KI Reasoning Matrix
+            </h2>
+            <div className="rounded-xl bg-black/40 border border-white/5 p-5 shadow-inner">
+              <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                {t.ki_reasoning ?? "No reasoning recorded."}
+              </p>
+            </div>
             {t.lesson_learned && (
-              <>
-                <div className="mt-4 border-t border-border pt-4">
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground">Lesson learned</div>
-                  <p className="mt-2 text-sm">{t.lesson_learned}</p>
+              <div className="mt-6">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-cyan-400 mb-2 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" /> Post-Trade Lesson
+                </h3>
+                <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4 text-sm font-medium text-cyan-300">
+                  {t.lesson_learned}
                 </div>
-              </>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Timeline</h2>
-            <div className="mt-3 space-y-2">
-              {events.length === 0 && <p className="text-xs text-muted-foreground">No events yet.</p>}
-              {events.map((event) => (
-                <div key={event.id} className="border-l border-border pl-3 text-xs">
-                  <div className="font-medium">{String(event.event_type).replaceAll("_", " ")}</div>
-                  <div className="text-muted-foreground">
-                    {new Date(event.created_at as string).toLocaleString()}
-                    {event.to_stage ? ` · ${String(event.to_stage).replaceAll("_", " ")}` : ""}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Ledger</h2>
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-xs">
-                <tbody>
-                  {ledger.map((entry) => (
-                    <tr key={entry.id} className="border-b border-border/50">
-                      <td className="py-2 text-muted-foreground">{new Date(entry.created_at as string).toLocaleString()}</td>
-                      <td className="py-2">{String(entry.entry_type).replaceAll("_", " ")}</td>
-                      <td className={`py-2 text-right tabular-nums ${Number(entry.amount) >= 0 ? "text-[color:var(--profit)]" : "text-[color:var(--loss)]"}`}>
-                        {fmtMoney(Number(entry.amount), entry.currency)}
-                      </td>
-                    </tr>
-                  ))}
-                  {ledger.length === 0 && (
-                    <tr><td className="py-2 text-muted-foreground">No ledger entries yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {t.status === "active" && (
-            <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Stage</h2>
-              <select value={stage || t.stage || ""} onChange={(e) => setStage(e.target.value)} className="mt-3 w-full rounded-md border border-input bg-input px-3 py-2 text-sm">
-                {(t.trade_type === "paper" ? ["paper_active"] : ["bought","awaiting_transfer","received","listed_for_sale","awaiting_payment","ready_to_close","partially_closed"]).map((value) => (
-                  <option key={value} value={value}>{value.replaceAll("_", " ")}</option>
-                ))}
-              </select>
-              <button onClick={() => updateStage.mutate()} disabled={updateStage.isPending || !(stage || t.stage)}
-                className="mt-2 w-full rounded-md bg-primary py-1.5 text-sm text-primary-foreground disabled:opacity-50">
-                Update stage
-              </button>
-            </div>
-          )}
-
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Fees</h2>
-            <div className="mt-3 space-y-2">
-              {fees.map((fee) => (
-                <div key={fee.id} className="flex justify-between text-xs border-b border-border/50 py-1">
-                  <span>{fee.fee_type}</span>
-                  <span className="tabular-nums">{fmtMoney(Number(fee.amount), fee.currency)}</span>
-                </div>
-              ))}
-              {fees.length === 0 && <p className="text-xs text-muted-foreground">No fees recorded yet.</p>}
-            </div>
-            {t.status === "active" && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <input value={feeType} onChange={(e) => setFeeType(e.target.value)} className="rounded-md border border-input bg-input px-2 py-1.5 text-sm" />
-                <input type="number" step="0.01" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} placeholder="Amount" className="rounded-md border border-input bg-input px-2 py-1.5 text-sm" />
-                <button onClick={() => addFee.mutate()} disabled={!feeAmount || addFee.isPending}
-                  className="col-span-2 rounded-md bg-primary py-1.5 text-sm text-primary-foreground disabled:opacity-50">
-                  Add fee
-                </button>
               </div>
             )}
-          </div>
+          </GlassCard>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Notes</h2>
-            <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
-              {notes.length === 0 && <p className="text-xs text-muted-foreground">No notes yet.</p>}
-              {notes.map((n) => (
-                <div key={n.id} className="rounded-md bg-muted/40 p-2 text-xs">
-                  <div className="text-muted-foreground">{new Date(n.created_at as string).toLocaleString()}</div>
-                  <div className="mt-0.5">{n.note}</div>
+          <GlassCard className="p-6">
+            <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm flex items-center gap-2 mb-4">
+              <CalendarClock className="w-5 h-5 text-emerald-400" /> Accounting Ledger
+            </h2>
+            <div className="rounded-xl bg-black/40 border border-white/5 shadow-inner overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-white/5 border-b border-white/5 text-left uppercase tracking-widest text-slate-500 font-bold">
+                    <tr>
+                      <th className="py-3 px-4">Timestamp</th>
+                      <th className="py-3 px-4">Entry Type</th>
+                      <th className="py-3 px-4 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-medium">
+                    {ledger.map((entry: any) => (
+                      <tr key={entry.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-slate-400">{new Date(entry.created_at as string).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-slate-300 capitalize">{String(entry.entry_type).replaceAll("_", " ")}</td>
+                        <td className={`py-3 px-4 text-right tabular-nums ${Number(entry.amount) >= 0 ? "text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]" : "text-rose-400 drop-shadow-[0_0_5px_rgba(251,113,133,0.3)]"}`}>
+                          {fmtMoney(Number(entry.amount), entry.currency)}
+                        </td>
+                      </tr>
+                    ))}
+                    {ledger.length === 0 && (
+                      <tr><td colSpan={3} className="py-6 text-center text-slate-500">No ledger entries yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        <div className="space-y-6">
+          <GlassCard className="p-5">
+            <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm mb-4">Qualitative Insights</h2>
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+              Financial data and execution stages are now detected automatically by the KI engine. 
+              Use this section only to record human context that the engine cannot deduce.
+            </p>
+            
+            <div className="space-y-3 mb-5 max-h-48 overflow-y-auto scrollbar-hide">
+              {notes.length === 0 && <p className="text-xs font-medium text-slate-500 py-2">No notes recorded.</p>}
+              {notes.map((n: any) => (
+                <div key={n.id} className="rounded-xl bg-black/40 border border-white/5 p-3 shadow-inner">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/70 mb-1">{new Date(n.created_at as string).toLocaleString()}</div>
+                  <div className="text-sm font-medium text-slate-300">{n.note}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-3">
+            
+            <div className="pt-4 border-t border-white/10 space-y-3">
               <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
-                placeholder="Add a note…"
-                className="w-full rounded-md border border-input bg-input px-3 py-2 text-sm" />
-              <button onClick={() => addNote.mutate()} disabled={!note.trim() || addNote.isPending}
-                className="mt-2 w-full rounded-md bg-primary py-1.5 text-sm text-primary-foreground disabled:opacity-50">
-                {addNote.isPending ? "Saving…" : "Add note"}
-              </button>
+                placeholder="Log Strategy, Confidence, or Lessons Learned..."
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 transition-all font-medium placeholder:text-slate-500 resize-none" />
+              <CyberButton onClick={() => addNote.mutate()} disabled={!note.trim() || addNote.isPending} className="w-full h-auto py-2.5">
+                {addNote.isPending ? "Logging…" : "Save Insight"}
+              </CyberButton>
             </div>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </AppShell>
   );
 }
 
-function Info({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "profit" | "loss" }) {
-  const cls = tone === "profit" ? "text-[color:var(--profit)]" : tone === "loss" ? "text-[color:var(--loss)]" : "text-foreground";
+function Info({ label, value, tone = "default", className = "" }: { label: string; value: string; tone?: "default" | "profit" | "loss" | "warning"; className?: string }) {
+  const cls = tone === "profit" ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]" 
+    : tone === "loss" ? "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.3)]" 
+    : tone === "warning" ? "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]"
+    : "text-slate-200";
+    
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`mt-1 tabular-nums ${cls}`}>{value}</div>
+    <div className={`rounded-xl bg-black/40 border border-white/5 p-3 shadow-inner ${className}`}>
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{label}</div>
+      <div className={`text-sm font-black tracking-tight ${cls}`}>{value}</div>
     </div>
   );
 }

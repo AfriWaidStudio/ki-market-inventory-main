@@ -3,6 +3,10 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { CyberButton } from "@/components/ui/CyberButton";
+import { CyberInput } from "@/components/ui/CyberInput";
+import { Send, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({ meta: [{ title: "Ask KI — KI Market Inventory" }] }),
@@ -49,19 +53,23 @@ function ChatUI() {
 
   return (
     <AppShell title="Ask Waides KI">
-      <div className="flex flex-col h-[calc(100vh-11rem)] rounded-xl border border-border bg-card overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <GlassCard className="flex flex-col h-[calc(100vh-11rem)] p-0 lg:p-0">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
           {messages.length === 0 && (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Waides KI answers using your actual tracked trades. It never invents numbers.
+            <div className="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-600 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center mb-6 border border-white/20">
+                <Zap className="w-8 h-8 text-white" fill="currentColor" />
+              </div>
+              <h2 className="text-2xl font-black text-white drop-shadow-md tracking-tight">System Initialization</h2>
+              <p className="mt-3 text-sm text-slate-400 font-medium">
+                Waides KI connects directly to your trading matrix. It answers using your actual tracked trades and live scanner data. It never invents numbers.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
                 {suggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => submit(s)}
-                    className="rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs hover:bg-muted"
+                    className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white hover:border-white/20 active:translate-y-[1px] transition-all shadow-inner"
                   >
                     {s}
                   </button>
@@ -75,11 +83,16 @@ function ChatUI() {
               .join("");
             return (
               <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                {m.role !== "user" && (
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center mr-3 mt-1 shrink-0 border border-white/20 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                    <Zap className="w-4 h-4 text-white" />
+                  </div>
+                )}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
+                  className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-sm whitespace-pre-wrap leading-relaxed shadow-lg backdrop-blur-md border ${
                     m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
+                      ? "bg-slate-800 text-white border-white/10 rounded-tr-sm"
+                      : "bg-black/60 text-slate-200 border-cyan-500/30 rounded-tl-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_0_20px_rgba(6,182,212,0.1)]"
                   }`}
                 >
                   {text}
@@ -89,11 +102,14 @@ function ChatUI() {
           })}
           {busy && (
             <div className="flex justify-start">
-              <div className="rounded-2xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-                <span className="inline-flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: "300ms" }} />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center mr-3 mt-1 shrink-0 border border-white/20 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <div className="rounded-2xl rounded-tl-sm bg-black/60 border border-cyan-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] px-5 py-4 text-sm text-cyan-400">
+                <span className="inline-flex gap-1.5 items-center h-full">
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "300ms" }} />
                 </span>
               </div>
             </div>
@@ -105,24 +121,24 @@ function ChatUI() {
             e.preventDefault();
             submit(input);
           }}
-          className="border-t border-border p-3 flex gap-2"
+          className="border-t border-white/10 bg-black/20 p-4 flex gap-3 backdrop-blur-xl shrink-0"
         >
-          <input
+          <CyberInput
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your trades, timing, or opportunities…"
-            className="flex-1 rounded-md border border-input bg-input px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Query matrix logs..."
+            className="flex-1 mt-0 py-3.5 border-white/20 bg-black/60"
           />
-          <button
+          <CyberButton
             type="submit"
             disabled={!input.trim() || busy}
-            className="rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="px-6 h-full"
           >
-            Send
-          </button>
+            <Send className="w-5 h-5 mr-2 opacity-70" /> {busy ? "Uplinking…" : "Transmit"}
+          </CyberButton>
         </form>
-      </div>
+      </GlassCard>
     </AppShell>
   );
 }

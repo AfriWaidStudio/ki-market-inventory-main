@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Search,
   TestTube,
@@ -8,349 +9,280 @@ import {
   Bot,
   ShieldCheck,
   BookOpen,
-  Database,
-  Workflow,
-  Target,
-  TrendingUp,
-  CheckCircle2,
-  Globe,
   ArrowRight,
   Shield,
   Lock,
   Zap,
-  AlertCircle,
 } from "lucide-react";
-import {
-  IllustrationScanner,
-  IllustrationPaperTrading,
-  IllustrationAnalytics,
-  IllustrationKI,
-  IllustrationRiskManagement,
-  IllustrationJournal,
-} from "@/assets/illustrations";
+import { useRef } from "react";
 
 const features = [
   {
+    id: "scanner",
     icon: Search,
     title: "Opportunity Scanner",
-    description: "Real-time P2P price comparison across Binance, Bybit, OKX, KuCoin, and Bitget",
-    Illustration: IllustrationScanner,
-    color: "text-cyan-500",
-    bg: "bg-cyan-500/10",
+    description: "Real-time P2P price comparison across top exchanges. Instantly spot the highest spreads.",
+    image: "/features/scanner.png",
+    color: "from-cyan-400 to-blue-500",
+    shadow: "shadow-cyan-500/20",
+    size: "col-span-1 md:col-span-2 row-span-2",
   },
   {
+    id: "trading",
     icon: TestTube,
     title: "Paper Trading",
-    description: "Simulate trades without real money. Track performance with zero risk.",
-    Illustration: IllustrationPaperTrading,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
+    description: "Simulate trades without real money. Validate your strategies risk-free.",
+    image: "/features/trading.png",
+    color: "from-purple-400 to-pink-500",
+    shadow: "shadow-purple-500/20",
+    size: "col-span-1 md:col-span-1 row-span-1",
   },
   {
+    id: "analytics",
     icon: BarChart3,
     title: "Profit Analytics",
-    description: "Daily, weekly, monthly profit tracking. Separate paper vs real trades.",
-    Illustration: IllustrationAnalytics,
-    color: "text-cyan-600",
-    bg: "bg-cyan-600/10",
+    description: "Deep dive into your daily, weekly, and monthly performance metrics.",
+    image: "/features/analytics.png",
+    color: "from-emerald-400 to-cyan-500",
+    shadow: "shadow-emerald-500/20",
+    size: "col-span-1 md:col-span-1 row-span-1",
   },
   {
+    id: "ki",
     icon: Bot,
     title: "KI Intelligence",
-    description: "Chat with AI about your trades, performance, and market opportunities.",
-    Illustration: IllustrationKI,
-    color: "text-purple-600",
-    bg: "bg-purple-600/10",
+    description: "Chat with an AI trained specifically on market arbitrage and your personal trade history.",
+    image: "/features/ki.png",
+    color: "from-fuchsia-400 to-purple-600",
+    shadow: "shadow-fuchsia-500/20",
+    size: "col-span-1 md:col-span-2 row-span-1",
   },
   {
+    id: "risk",
     icon: ShieldCheck,
     title: "Risk Management",
-    description: "Track capital flow, fees, and risks. Never mix paper with real profit.",
-    Illustration: IllustrationRiskManagement,
-    color: "text-cyan-400",
-    bg: "bg-cyan-400/10",
+    description: "Track capital flow and isolate paper funds from real world profits.",
+    image: "/features/risk.png",
+    color: "from-rose-400 to-orange-500",
+    shadow: "shadow-rose-500/20",
+    size: "col-span-1 md:col-span-1 row-span-1",
   },
   {
+    id: "journal",
     icon: BookOpen,
     title: "Trade Journal",
-    description: "Document lessons learned. Track emotions and outcomes for continuous improvement.",
-    Illustration: IllustrationJournal,
-    color: "text-purple-400",
-    bg: "bg-purple-400/10",
-  },
-];
-
-const stats = [
-  { value: "0", label: "Active Trades", icon: Database },
-  { value: "0", label: "Total Profit", icon: TrendingUp },
-  { value: "0", label: "Paper Trades", icon: TestTube },
-  { value: "0", label: "Manual Trades", icon: Target },
-];
-
-const workflowSteps = [
-  {
-    step: "1",
-    title: "Connect Exchanges",
-    description: "Add read-only API keys from Binance, Bybit, OKX, KuCoin, or Bitget",
-    icon: Globe,
-  },
-  {
-    step: "2",
-    title: "Scan Opportunities",
-    description: "View real-time P2P price spreads and arbitrage opportunities",
-    icon: Search,
-  },
-  {
-    step: "3",
-    title: "Paper or Manual Trade",
-    description: "Simulate or record actual trades with full tracking",
-    icon: Workflow,
-  },
-  {
-    step: "4",
-    title: "Analyze Performance",
-    description: "Review profits, fees, and risk patterns with AI insights",
-    icon: BarChart3,
+    description: "Document lessons learned and emotional states during execution.",
+    image: "/features/journal.png",
+    color: "from-blue-400 to-indigo-500",
+    shadow: "shadow-blue-500/20",
+    size: "col-span-1 md:col-span-1 row-span-1",
   },
 ];
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+  
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const opacityHero = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useEffect(() => {
     if (!loading && isAuthenticated) void navigate({ to: "/dashboard" });
   }, [isAuthenticated, loading, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <section className="relative flex-1 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-black" />
-        <div className="absolute -top-48 -right-48 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+    <div ref={containerRef} className="min-h-screen bg-[#030712] text-slate-200 selection:bg-cyan-500/30 font-sans overflow-hidden">
+      
+      {/* GLOBAL 3D LIGHTING & MESH BACKGROUND */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-600/20 blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-700/20 blur-[150px] mix-blend-screen" />
+        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] rounded-full bg-blue-500/10 blur-[100px] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+      </div>
+
+      {/* FLOATING NAVBAR */}
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl rounded-full border border-white/10 bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] shadow-inner p-2 pl-6 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-purple-600 shadow-[0_0_15px_rgba(6,182,212,0.5)] flex items-center justify-center">
+            <Zap className="w-4 h-4 text-white" fill="currentColor" />
+          </div>
+          <span className="font-bold text-white tracking-wide">KI Market</span>
+        </div>
         
-        <div className="relative container mx-auto px-4 py-20 lg:py-32">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-cyan-500/20 text-cyan-300 text-sm font-medium mb-8 backdrop-blur-sm border border-cyan-500/30">
-              <ShieldCheck className="h-4 w-4" />
-              <span className="font-semibold">Tracking-only platform</span>
-              <span className="mx-2">•</span>
-              <span>No auto-execution • Never moves your funds</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-8 leading-none text-white">
-              <span className="block">Your P2P & Arbitrage</span>
-              <span className="block bg-gradient-to-r from-cyan-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">Command Center</span>
-            </h1>
-            
-            <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Track opportunities, record trades, analyze performance, and speak with Konsmik Intelligence about your market activity.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-14">
-              <Link
-                to="/auth"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-10 py-4 text-base font-semibold text-black shadow-xl hover:shadow-2xl transition-all duration-300 group"
-              >
-                Get Started
-                <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/auth"
-                className="inline-flex items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-900/80 px-10 py-4 text-base font-semibold text-slate-200 hover:bg-slate-800 transition-all duration-300"
-              >
-                Sign In
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto">
-              {stats.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <div key={stat.label} className="flex flex-col items-center">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 flex items-center justify-center mb-3 shadow-lg">
-                      <Icon className="h-6 w-6 text-black" />
-                    </div>
-                    <div className="text-3xl font-bold text-white">{stat.value}</div>
-                    <div className="text-sm text-slate-400 mt-1">{stat.label}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="flex items-center gap-3">
+          <Link to="/auth">
+            <button className="px-5 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+              Log In
+            </button>
+          </Link>
+          <Link to="/auth">
+            <button className="relative px-6 py-2 text-sm font-bold text-white bg-white/10 rounded-full border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_15px_rgba(0,0,0,0.5)] hover:bg-white/20 active:translate-y-[2px] active:shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-all">
+              Sign Up
+            </button>
+          </Link>
         </div>
-      </section>
+      </motion.nav>
 
-      <section className="py-24 bg-slate-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 text-slate-300 text-sm font-medium mb-6">
-              <Zap className="h-4 w-4" />
-              How It Works
-            </div>
-            <h2 className="text-4xl font-bold mb-6 text-white">Simple 4-Step Workflow</h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Get from zero to full tracking in minutes
-            </p>
-          </div>
+      {/* 3D HERO SECTION */}
+      <section className="relative pt-40 pb-20 lg:pt-56 lg:pb-32 z-10 px-4 min-h-[90vh] flex flex-col items-center justify-center">
+        <motion.div 
+          style={{ y: yHero, opacity: opacityHero }}
+          className="max-w-5xl mx-auto text-center perspective-[1000px]"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/50 text-cyan-300 text-sm font-medium mb-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_20px_rgba(6,182,212,0.15)] backdrop-blur-md"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Tracking-only platform. Zero auto-execution.</span>
+          </motion.div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {workflowSteps.map((step) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.title} className="group text-center">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-105 transition-transform">
-                    <span className="text-black font-bold text-xl">{step.step}</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-3 text-white">{step.title}</h3>
-                  <p className="text-slate-400 text-sm px-4">{step.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-gradient-to-b from-slate-950 to-slate-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center mb-20">
-            <h2 className="text-4xl font-bold mb-6 text-white">Powerful Features</h2>
-            <p className="text-xl text-slate-400">
-              Track, analyze, and optimize your P2P trading strategies
-            </p>
-          </div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-white drop-shadow-2xl"
+          >
+            Command Your <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-cyan-200 to-purple-400 drop-shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+              Arbitrage Edge.
+            </span>
+          </motion.h1>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              const Illustration = feature.Illustration;
-              return (
-                <div key={feature.title} className="group bg-slate-900/50 dark:bg-slate-900 rounded-2xl border border-slate-800 p-8 shadow-sm hover:shadow-xl transition-all duration-300">
-                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl ${feature.bg} ${feature.color} mb-6`}>
-                    <Icon className="h-7 w-7" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3 text-white">{feature.title}</h3>
-                  <p className="text-slate-400 mb-6 leading-relaxed">{feature.description}</p>
-                  <div className="bg-slate-800 rounded-lg p-3">
-                    <div className="w-full h-32 bg-slate-700 rounded-md overflow-hidden">
-                      <Illustration className="w-full h-full" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-slate-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-6 text-white">Your Security & Control</h2>
-              <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-                We never execute trades or move your funds - only track
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center flex-shrink-0">
-                    <Lock className="h-5 w-5 text-black" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">Read-Only Access</h3>
-                    <p className="text-slate-400 text-sm">
-                      API keys are encrypted at rest. We only read your transaction history.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">No Auto-Execution</h3>
-                    <p className="text-slate-400 text-sm">
-                      This platform tracks only. We never place orders or execute trades.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-600 flex items-center justify-center flex-shrink-0">
-                    <Database className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">Encrypted Storage</h3>
-                    <p className="text-slate-400 text-sm">
-                      API keys are AES-256-GCM encrypted. Never stored in plain text.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">Separate Tracking</h3>
-                    <p className="text-slate-400 text-sm">
-                      Paper and real trades are kept separate. Never mixed.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-400 flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-5 w-5 text-black" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">Audit Trail</h3>
-                    <p className="text-slate-400 text-sm">
-                      Every action is logged. Transparent and traceable.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="w-10 h-10 rounded-lg bg-purple-400 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-black" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1">Risk Warnings</h3>
-                    <p className="text-slate-400 text-sm">
-                      We warn about high-risk opportunities and fee spikes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-gradient-to-r from-cyan-600 via-purple-600 to-cyan-500 text-black">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-8">
-              Ready to Track Your Trading?
-            </h2>
-            <p className="text-xl opacity-95 mb-10">
-              Join thousands of traders using KI Market Inventory to optimize their strategies.
-            </p>
-            <Link
-              to="/auth"
-              className="inline-flex items-center justify-center rounded-xl bg-black text-cyan-400 px-10 py-4 text-base font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 group"
-            >
-              Get Started Free
-              <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+          <motion.p 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed font-light"
+          >
+            The ultimate 3D intelligence dashboard for P2P traders. Track spreads, simulate risk-free, and analyze performance with KI.
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+          >
+            <Link to="/auth">
+              <button className="group relative flex items-center justify-center px-10 py-5 text-lg font-bold text-black bg-gradient-to-b from-white to-slate-200 rounded-2xl border border-white/50 shadow-[inset_0_2px_4px_rgba(255,255,255,1),0_10px_30px_rgba(255,255,255,0.2),0_20px_40px_rgba(6,182,212,0.2)] hover:shadow-[inset_0_2px_4px_rgba(255,255,255,1),0_15px_40px_rgba(255,255,255,0.3),0_25px_50px_rgba(6,182,212,0.3)] active:translate-y-[4px] active:shadow-[inset_0_1px_2px_rgba(0,0,0,0.2),0_5px_15px_rgba(255,255,255,0.1)] transition-all duration-300">
+                Launch Platform
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </Link>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* 3D BENTO BOX FEATURES GRID */}
+      <section className="relative py-24 z-10 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-lg">Platform Capabilities</h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">Everything you need to find, track, and master arbitrage spreads.</p>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 auto-rows-[300px] gap-6">
+            {features.map((feature, i) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={feature.id}
+                  initial={{ opacity: 0, y: 50, rotateX: 10 }}
+                  whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{ y: -8, scale: 1.01 }}
+                  className={`relative group rounded-[2rem] overflow-hidden bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_15px_35px_rgba(0,0,0,0.5)] ${feature.size} ${feature.shadow} hover:shadow-2xl transition-all duration-500 flex flex-col`}
+                >
+                  {/* Glassmorphic overlay */}
+                  <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent to-black/90 pointer-events-none" />
+                  
+                  {/* Dynamic Image Background with 3D Parallax feel */}
+                  <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
+                    <img 
+                      src={feature.image} 
+                      alt={feature.title} 
+                      className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000 ease-out"
+                    />
+                    <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-transparent transition-colors duration-500" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="relative z-20 mt-auto p-8 flex flex-col items-start">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg shadow-black/50 mb-4 border border-white/20`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2 tracking-tight drop-shadow-md">{feature.title}</h3>
+                    <p className="text-slate-300 font-medium leading-relaxed drop-shadow-sm max-w-md">{feature.description}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 3D SECURITY SECTION */}
+      <section className="relative py-32 z-10 px-4 overflow-hidden">
+        <div className="max-w-5xl mx-auto relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-blue-900/20 blur-[120px] rounded-full pointer-events-none" />
+          
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1 }}
+            className="relative bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-12 md:p-20 text-center shadow-[inset_0_2px_10px_rgba(255,255,255,0.05),0_30px_60px_rgba(0,0,0,0.6)]"
+          >
+            <div className="w-20 h-20 mx-auto bg-gradient-to-b from-slate-800 to-black rounded-3xl border border-slate-700 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_10px_20px_rgba(0,0,0,0.5)] flex items-center justify-center mb-8 relative">
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full animate-pulse" />
+              <Lock className="w-10 h-10 text-blue-400 relative z-10" />
+            </div>
+            
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">Fort Knox Security</h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12">
+              Your API keys are encrypted at rest. We request strictly read-only access. The platform physically cannot withdraw or execute trades.
+            </p>
+            
+            <div className="grid md:grid-cols-2 gap-6 text-left">
+              {[
+                { title: "AES-256 Encryption", desc: "Military grade database encryption for all stored configurations.", color: "text-blue-400" },
+                { title: "Isolated Environments", desc: "Paper trading simulations are walled off from your real portfolio.", color: "text-cyan-400" }
+              ].map((item, i) => (
+                <div key={i} className="bg-black/40 border border-white/5 rounded-2xl p-6 shadow-inner">
+                  <h3 className={`text-lg font-bold ${item.color} mb-2`}>{item.title}</h3>
+                  <p className="text-slate-400 text-sm">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FOOTER CTA */}
+      <section className="relative py-32 z-10 px-4 border-t border-white/5 bg-black/50 backdrop-blur-lg">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-8">Start Tracking Today.</h2>
+          <Link to="/auth">
+            <button className="group relative flex items-center justify-center px-12 py-6 mx-auto text-xl font-bold text-black bg-gradient-to-r from-cyan-400 to-purple-500 rounded-2xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_10px_30px_rgba(147,51,234,0.3)] hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),0_15px_40px_rgba(6,182,212,0.4)] active:translate-y-[4px] active:shadow-[inset_0_1px_2px_rgba(0,0,0,0.4),0_5px_15px_rgba(0,0,0,0.5)] transition-all duration-300">
+              Create Your Command Center
+            </button>
+          </Link>
         </div>
       </section>
     </div>

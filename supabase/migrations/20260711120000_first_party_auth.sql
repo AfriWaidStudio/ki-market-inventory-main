@@ -69,7 +69,7 @@ BEGIN
     JOIN pg_namespace refn ON refn.oid = ref.relnamespace
     JOIN unnest(con.conkey) WITH ORDINALITY cols(attnum, ord) ON true
     JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = cols.attnum
-    WHERE con.contype = 'f' AND refn.nspname = 'auth' AND ref.relname = 'users'
+    WHERE con.contype = 'f' AND refn.nspname = 'auth' AND ref.relname = 'users' AND n.nspname = 'public'
   LOOP
     EXECUTE format('ALTER TABLE %I.%I DROP CONSTRAINT %I', item.schema_name, item.table_name, item.constraint_name);
     EXECUTE format('ALTER TABLE %I.%I ADD CONSTRAINT %I FOREIGN KEY (%I) REFERENCES public.app_users(id) ON DELETE CASCADE',

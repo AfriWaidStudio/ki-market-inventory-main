@@ -3,9 +3,12 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Badge } from "@/components/StatCard";
+import { CyberBadge } from "@/components/ui/CyberBadge";
+import { CyberButton } from "@/components/ui/CyberButton";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { fmtMoney } from "@/lib/currency";
 import { listTradesPaginated } from "@/lib/trades.functions";
+import { BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/journal")({
   head: () => ({ meta: [{ title: "Journal — KI Market Inventory" }] }),
@@ -29,19 +32,26 @@ function JournalPage() {
 
   return (
     <AppShell title="Trade Journal">
-      <p className="text-sm text-muted-foreground max-w-2xl">
-        Every closed trade generates a draft journal entry from your actual records. Lessons are estimated
-        from KI's post-trade analysis — you can correct them on the trade detail page.
-      </p>
+      <div className="mb-8 flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-600 shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center justify-center shrink-0 border border-white/20">
+          <BookOpen className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-sm font-medium text-slate-400 max-w-2xl mt-1">
+          Every closed trade generates a draft journal entry from your actual records. Lessons are estimated
+          from KI's post-trade analysis — you can correct them on the trade detail page.
+        </p>
+      </div>
 
       {rows.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          No closed trades yet. Close a trade on the <Link to="/trades" className="text-primary underline">Active Trades</Link> page
-          to start your journal.
-        </div>
+        <GlassCard className="text-center p-12">
+          <p className="text-sm font-medium text-slate-400">
+            No closed trades yet. Close a trade on the <Link to="/trades" className="text-cyan-400 font-bold hover:underline drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">Active Trades</Link> page
+            to start your journal.
+          </p>
+        </GlassCard>
       ) : (
-        <div className="mt-6 space-y-3">
-          {rows.map((t) => {
+        <div className="space-y-4">
+          {rows.map((t: any) => {
             const profit = t.actual_profit != null ? Number(t.actual_profit) : 0;
             const tone = profit >= 0 ? "profit" : "loss";
             return (
@@ -49,28 +59,36 @@ function JournalPage() {
                 key={t.id}
                 to="/trades/$tradeId"
                 params={{ tradeId: t.id }}
-                className="block rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition"
+                className="block group"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge tone="info">{t.asset}</Badge>
-                    <span className="text-muted-foreground">
-                      {t.buy_exchange} → {t.sell_exchange}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(t.sell_time ?? t.created_at).toLocaleDateString()}
-                    </span>
+                <GlassCard className="p-5 border-white/5 hover:border-cyan-500/30 transition-all hover:-translate-y-1 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_10px_30px_rgba(6,182,212,0.15)]">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 text-sm">
+                      <CyberBadge variant="info">{t.asset}</CyberBadge>
+                      <span className="text-white font-bold tracking-wide">
+                        {t.buy_exchange} <span className="text-slate-500 font-normal mx-1">→</span> {t.sell_exchange}
+                      </span>
+                      <span className="text-xs font-medium text-slate-500">
+                        {new Date(t.sell_time ?? t.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className={`text-lg font-black tabular-nums tracking-tight ${tone === 'profit' ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' : 'text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.3)]'}`}>
+                      {fmtMoney(profit, t.currency ?? "NGN")}
+                    </div>
                   </div>
-                  <div className={`text-sm font-medium tabular-nums text-[color:var(--${tone})]`}>
-                    {fmtMoney(profit, t.currency ?? "NGN")}
-                  </div>
-                </div>
-                {t.lesson_learned && (
-                  <p className="mt-2 text-sm text-muted-foreground italic">"{t.lesson_learned}"</p>
-                )}
-                {t.ki_accuracy_verdict && (
-                  <p className="mt-1 text-xs text-muted-foreground">KI: {t.ki_accuracy_verdict}</p>
-                )}
+                  {t.lesson_learned && (
+                    <div className="mt-4 p-3 rounded-lg bg-black/40 border border-white/5 shadow-inner">
+                      <p className="text-sm font-medium text-slate-300 italic">"{t.lesson_learned}"</p>
+                    </div>
+                  )}
+                  {t.ki_accuracy_verdict && (
+                    <div className="mt-3">
+                      <CyberBadge variant={t.ki_accuracy_verdict === "accurate" ? "profit" : "warning"}>
+                        KI: {t.ki_accuracy_verdict}
+                      </CyberBadge>
+                    </div>
+                  )}
+                </GlassCard>
               </Link>
             );
           })}
@@ -78,38 +96,38 @@ function JournalPage() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <button
+        <div className="flex justify-center items-center gap-3 mt-8">
+          <CyberButton
+            variant="secondary"
             onClick={() => setPage(0)}
             disabled={page === 0}
-            className="px-3 py-1 text-sm rounded-md border border-input bg-input hover:bg-accent disabled:opacity-50"
           >
             First
-          </button>
-          <button
+          </CyberButton>
+          <CyberButton
+            variant="secondary"
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="px-3 py-1 text-sm rounded-md border border-input bg-input hover:bg-accent disabled:opacity-50"
           >
             Prev
-          </button>
-          <span className="px-2 text-sm text-muted-foreground">
+          </CyberButton>
+          <span className="px-4 text-xs font-bold text-slate-400 tracking-widest uppercase">
             Page {page + 1} of {totalPages}
           </span>
-          <button
+          <CyberButton
+            variant="secondary"
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
-            className="px-3 py-1 text-sm rounded-md border border-input bg-input hover:bg-accent disabled:opacity-50"
           >
             Next
-          </button>
-          <button
+          </CyberButton>
+          <CyberButton
+            variant="secondary"
             onClick={() => setPage(totalPages - 1)}
             disabled={page >= totalPages - 1}
-            className="px-3 py-1 text-sm rounded-md border border-input bg-input hover:bg-accent disabled:opacity-50"
           >
             Last
-          </button>
+          </CyberButton>
         </div>
       )}
     </AppShell>
