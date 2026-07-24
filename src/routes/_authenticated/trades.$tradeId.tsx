@@ -9,8 +9,9 @@ import { CyberButton } from "@/components/ui/CyberButton";
 import { CyberInput } from "@/components/ui/CyberInput";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { fmtMoney, fmtNumber } from "@/lib/currency";
-import { addTradeFee, addTradeNote, getTrade, updateTradeStage } from "@/lib/trades.functions";
-import { BrainCircuit, BookOpen, Timeline, CalendarClock, ChevronLeft } from "lucide-react";
+import { addTradeFee, getTrade, updateTradeStage } from "@/lib/trades.functions";
+import { getTradeJournal, saveTradeJournal } from "@/lib/journal.functions";
+import { BrainCircuit, BookOpen, Timeline, CalendarClock, ChevronLeft, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades/$tradeId")({
   head: () => ({ meta: [{ title: "Trade Details — KI Market Inventory" }] }),
@@ -21,9 +22,10 @@ function TradeDetailPage() {
   const { tradeId } = Route.useParams();
   const qc = useQueryClient();
   const getFn = useServerFn(getTrade);
-  const noteFn = useServerFn(addTradeNote);
   const feeFn = useServerFn(addTradeFee);
   const stageFn = useServerFn(updateTradeStage);
+  const journalGetFn = useServerFn(getTradeJournal);
+  const journalSaveFn = useServerFn(saveTradeJournal);
 
   const q = useQuery({
     queryKey: ["trade", tradeId],
@@ -35,11 +37,23 @@ function TradeDetailPage() {
   const [feeType, setFeeType] = useState("network");
   const [stage, setStage] = useState("");
   
-  const addNote = useMutation({
-    mutationFn: () => noteFn({ data: { trade_id: tradeId, note } }),
-    onSuccess: () => { setNote(""); qc.invalidateQueries({ queryKey: ["trade", tradeId] }); toast.success("Note added"); },
+  // Journal State
+  const journal = useQuery({
+    queryKey: ["journal", tradeId],
+    queryFn: () => journalGetFn({ data: { trade_id: tradeId } }),
+  });
+  const [emotionalState, setEmotionalState] = useState<'fomo' | 'anxious' | 'confident' | 'neutral' | 'tilted'>('neutral');
+  const [lessons, setLessons] = useState("");
+
+  const saveJournal = useMutation({
+    mutationFn: () => journalSaveFn({ data: { trade_id: tradeId, emotional_state: emotionalState, lessons_learned: lessons } }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["journal", tradeId] });
+      toast.success(`Journal saved! AI Risk Score: ${res.riskScore}/100`);
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+
   const addFee = useMutation({
     mutationFn: () =>
       feeFn({
@@ -172,30 +186,67 @@ function TradeDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <GlassCard className="p-5">
-            <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm mb-4">Qualitative Insights</h2>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-              Financial data and execution stages are now detected automatically by the KI engine. 
-              Use this section only to record human context that the engine cannot deduce.
-            </p>
-            
-            <div className="space-y-3 mb-5 max-h-48 overflow-y-auto scrollbar-hide">
-              {notes.length === 0 && <p className="text-xs font-medium text-slate-500 py-2">No notes recorded.</p>}
-              {notes.map((n: any) => (
-                <div key={n.id} className="rounded-xl bg-black/40 border border-white/5 p-3 shadow-inner">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/70 mb-1">{new Date(n.created_at as string).toLocaleString()}</div>
-                  <div className="text-sm font-medium text-slate-300">{n.note}</div>
-                </div>
-              ))}
+          {/* QUALITATIVE AI JOURNAL */}
+          <GlassCard className="p-6">
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-sm font-black uppercase tracking-widest text-fuchsia-400 drop-shadow-[0_0_5px_rgba(232,121,249,0.3)] flex items-center gap-2">
+                <BookOpen className="w-5 h-5" /> Psychological AI Journal
+              </h2>
+              {journal.data && (
+                <CyberBadge variant={journal.data.ai_risk_score > 50 ? "danger" : "info"}>
+                  Risk Score: {journal.data.ai_risk_score}/100
+                </CyberBadge>
+              )}
             </div>
             
-            <div className="pt-4 border-t border-white/10 space-y-3">
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
-                placeholder="Log Strategy, Confidence, or Lessons Learned..."
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 transition-all font-medium placeholder:text-slate-500 resize-none" />
-              <CyberButton onClick={() => addNote.mutate()} disabled={!note.trim() || addNote.isPending} className="w-full h-auto py-2.5">
-                {addNote.isPending ? "Logging…" : "Save Insight"}
-              </CyberButton>
+            <div className="space-y-4">
+              {journal.data ? (
+                <div className="rounded-xl bg-black/40 border border-white/5 p-4 space-y-2">
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Logged State</div>
+                  <CyberBadge variant="info">{journal.data.emotional_state.toUpperCase()}</CyberBadge>
+                  <div className="mt-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Lessons Learned</div>
+                  <div className="text-sm font-medium text-slate-200">{journal.data.lessons_learned}</div>
+                  
+                  {journal.data.ai_risk_score > 50 && (
+                    <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-start gap-2">
+                      <ShieldAlert className="w-4 h-4 text-rose-400 mt-0.5" />
+                      <div className="text-xs text-rose-300 font-medium leading-relaxed">
+                        <strong>AI Risk Warning:</strong> You logged this trade under a high-risk emotional state. The engine recommends taking a 24-hour break from manual trading and switching to paper mode to avoid tilt.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Emotional State Before Entry</label>
+                    <select 
+                      value={emotionalState} 
+                      onChange={(e) => setEmotionalState(e.target.value as any)}
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 appearance-none font-medium"
+                    >
+                      <option value="neutral">Neutral (Following System)</option>
+                      <option value="confident">Confident (High Conviction)</option>
+                      <option value="fomo">FOMO (Chasing Pump)</option>
+                      <option value="anxious">Anxious (Doubtful)</option>
+                      <option value="tilted">Tilted (Revenge Trading)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Lessons Learned</label>
+                    <textarea 
+                      value={lessons} 
+                      onChange={(e) => setLessons(e.target.value)} 
+                      rows={3}
+                      placeholder="Why did you take this route? What did you learn?"
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 transition-all font-medium placeholder:text-slate-500 resize-none" 
+                    />
+                  </div>
+                  <CyberButton onClick={() => saveJournal.mutate()} disabled={!lessons.trim() || saveJournal.isPending} className="w-full">
+                    {saveJournal.isPending ? "Analyzing Risk..." : "Log Psychological State"}
+                  </CyberButton>
+                </div>
+              )}
             </div>
           </GlassCard>
         </div>

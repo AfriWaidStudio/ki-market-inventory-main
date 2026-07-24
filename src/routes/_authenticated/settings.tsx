@@ -11,6 +11,7 @@ import { CyberInput } from "@/components/ui/CyberInput";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
+import { getUserSettings, updateUserSettings } from "@/lib/settings.functions";
 import {
   listApiKeys,
   createApiKey,
@@ -24,14 +25,20 @@ import {
 } from "@/lib/apiKeys.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  loader: async () => {
+    const [profile, settings] = await Promise.all([
+      getProfile(),
+      getUserSettings(),
+    ]);
+    return { profile, settings };
+  },
   head: () => ({ meta: [{ title: "Settings — KI Market Inventory" }] }),
   component: SettingsPage,
 });
 
 function SettingsPage() {
   const qc = useQueryClient();
-  const profileFn = useServerFn(getProfile);
-  const updateProfileFn = useServerFn(updateProfile);
+  const data = Route.useLoaderData();
   const listKeysFn = useServerFn(listApiKeys);
   const createKeyFn = useServerFn(createApiKey);
   const deleteKeyFn = useServerFn(deleteApiKey);
@@ -42,31 +49,41 @@ function SettingsPage() {
   const syncFn = useServerFn(syncExchangeAccount);
   const syncStatusFn = useServerFn(getSyncStatus);
 
-  const profile = useQuery({ queryKey: ["profile"], queryFn: () => profileFn() });
   const keys = useQuery({ queryKey: ["api-keys"], queryFn: () => listKeysFn() });
   const audit = useQuery({ queryKey: ["audit"], queryFn: () => auditFn() });
   const accounts = useQuery({ queryKey: ["exchange-accounts"], queryFn: () => listAccountsFn() });
   const syncStatus = useQuery({ queryKey: ["sync-status"], queryFn: () => syncStatusFn() });
 
-  const [currency, setCurrency] = useState<string>("");
-  const [displayName, setDisplayName] = useState<string>("");
+  const [currency, setCurrency] = useState(data.profile.base_currency ?? "NGN");
+  const [telegramId, setTelegramId] = useState(data.settings.telegram_chat_id || "");
   const [keyExchange, setKeyExchange] = useState("Binance");
   const [keyLabel, setKeyLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
+  const [apiPassphrase, setApiPassphrase] = useState("");
   const [readOnlyAck, setReadOnlyAck] = useState(false);
   const [acctExchange, setAcctExchange] = useState("Binance");
   const [acctLabel, setAcctLabel] = useState("");
 
-  const saveProfile = useMutation({
-    mutationFn: () => updateProfileFn({ data: { display_name: displayName || null, preferred_currency: currency || undefined } }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["profile"] }); toast.success("Profile saved"); },
+  const saveCurrency = useMutation({
+    mutationFn: (c: string) => updateProfile({ data: { base_currency: c } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Profile updated");
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+
+  const saveSettings = useMutation({
+    mutationFn: (tid: string) => updateUserSettings({ data: { telegram_chat_id: tid || null } }),
+    onSuccess: () => toast.success("Telegram settings saved"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
   const createKey = useMutation({
-    mutationFn: () => createKeyFn({ data: { exchange: keyExchange, key_label: keyLabel, api_key: apiKey, api_secret: apiSecret } }),
+    mutationFn: () => createKeyFn({ data: { exchange: keyExchange, key_label: keyLabel, api_key: apiKey, api_secret: apiSecret, api_passphrase: apiPassphrase || undefined } }),
     onSuccess: () => {
-      setKeyLabel(""); setApiKey(""); setApiSecret(""); setReadOnlyAck(false);
+      setKeyLabel(""); setApiKey(""); setApiSecret(""); setApiPassphrase(""); setReadOnlyAck(false);
       qc.invalidateQueries({ queryKey: ["api-keys"] }); qc.invalidateQueries({ queryKey: ["audit"] });
       toast.success("API key encrypted and stored");
     },
@@ -93,33 +110,45 @@ function SettingsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Sync failed"),
   });
 
-  const p = profile.data;
-  const displayValue = displayName || (p?.display_name ?? "");
-  const currencyValue = currency || (p?.preferred_currency ?? "NGN");
-
   return (
     <AppShell title="System Settings">
       <div className="grid gap-6 lg:grid-cols-2 max-w-6xl">
         
-        {/* PROFILE CARD */}
+        {/* PREFERENCES */}
         <GlassCard className="p-6">
-          <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm flex items-center gap-2 mb-6">
-            <UserCircle className="w-5 h-5 text-cyan-400" /> Identity Configuration
+          <h2 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm flex items-center gap-2 mb-4">
+            <UserCircle className="w-4 h-4 text-cyan-400" /> Preferences
           </h2>
           <div className="space-y-4">
-            <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">Display Name</span>
-              <CyberInput value={displayValue} onChange={(e) => setDisplayName(e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">Preferred Currency</span>
-              <select value={currencyValue} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all font-medium appearance-none">
-                {SUPPORTED_CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</option>)}
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Base Currency</label>
+              <select 
+                value={currency} 
+                onChange={(e) => {
+                  setCurrency(e.target.value);
+                  saveCurrency.mutate(e.target.value);
+                }}
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 appearance-none font-medium"
+              >
+                {SUPPORTED_CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} - {c.name}</option>)}
               </select>
-            </label>
-            <CyberButton onClick={() => saveProfile.mutate()} disabled={saveProfile.isPending} className="w-full mt-2">
-              Save Identity
-            </CyberButton>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Telegram Push Alerts (Chat ID)</label>
+              <div className="flex gap-2">
+                <CyberInput 
+                  value={telegramId} 
+                  onChange={(e) => setTelegramId(e.target.value)} 
+                  placeholder="e.g. 123456789" 
+                  className="flex-1"
+                />
+                <CyberButton onClick={() => saveSettings.mutate(telegramId)} disabled={saveSettings.isPending}>
+                  {saveSettings.isPending ? "Saving..." : "Save"}
+                </CyberButton>
+              </div>
+              <p className="text-xs text-slate-500 mt-2 font-medium">To get your ID, message <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">@userinfobot</a></p>
+            </div>
           </div>
         </GlassCard>
 
@@ -188,13 +217,16 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4 mb-4">
+          <div className="grid gap-3 md:grid-cols-5 mb-4">
             <select value={keyExchange} onChange={(e) => setKeyExchange(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white shadow-inner focus:outline-none focus:border-cyan-500/50 appearance-none font-medium">
               {["Binance","Bybit","OKX","KuCoin","Bitget"].map((x) => <option key={x}>{x}</option>)}
             </select>
             <CyberInput value={keyLabel} onChange={(e) => setKeyLabel(e.target.value)} placeholder="Key Label" className="px-3 py-2" />
             <CyberInput value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="API Key" className="px-3 py-2" />
             <CyberInput value={apiSecret} onChange={(e) => setApiSecret(e.target.value)} placeholder="API Secret" type="password" className="px-3 py-2" />
+            {["OKX", "KuCoin", "Bitget"].includes(keyExchange) && (
+              <CyberInput value={apiPassphrase} onChange={(e) => setApiPassphrase(e.target.value)} placeholder="Passphrase" type="password" className="px-3 py-2" />
+            )}
           </div>
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

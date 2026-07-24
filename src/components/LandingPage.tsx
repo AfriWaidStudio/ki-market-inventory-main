@@ -13,70 +13,49 @@ import {
   Shield,
   Lock,
   Zap,
+  RefreshCw,
+  Bell,
+  Activity
 } from "lucide-react";
 import { useRef } from "react";
 
 const features = [
   {
-    id: "scanner",
-    icon: Search,
-    title: "Opportunity Scanner",
-    description: "Real-time P2P price comparison across top exchanges. Instantly spot the highest spreads.",
-    image: "/features/scanner.png",
+    id: "sync",
+    icon: RefreshCw,
+    title: "Universal Exchange Sync",
+    description: "Connect OKX, KuCoin, Bitget, Binance, and Bybit. KI polls 24/7 in the background without needing your browser open.",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-500/20",
     size: "col-span-1 md:col-span-2 row-span-2",
   },
   {
-    id: "trading",
-    icon: TestTube,
-    title: "Paper Trading",
-    description: "Simulate trades without real money. Validate your strategies risk-free.",
-    image: "/features/trading.png",
+    id: "alerts",
+    icon: Bell,
+    title: "Instant Telegram Alerts",
+    description: "Push notifications for high-confidence arbitrage routes and P2P spreads straight to your phone.",
     color: "from-purple-400 to-pink-500",
     shadow: "shadow-purple-500/20",
     size: "col-span-1 md:col-span-1 row-span-1",
   },
   {
-    id: "analytics",
-    icon: BarChart3,
-    title: "Profit Analytics",
-    description: "Deep dive into your daily, weekly, and monthly performance metrics.",
-    image: "/features/analytics.png",
+    id: "journal",
+    icon: BrainCircuit,
+    title: "Psychological AI Journal",
+    description: "Log your emotional state before trades. KI analyzes your risk and forces breaks when necessary.",
     color: "from-emerald-400 to-cyan-500",
     shadow: "shadow-emerald-500/20",
     size: "col-span-1 md:col-span-1 row-span-1",
   },
   {
-    id: "ki",
-    icon: Bot,
-    title: "KI Intelligence",
-    description: "Chat with an AI trained specifically on market arbitrage and your personal trade history.",
-    image: "/features/ki.png",
+    id: "detection",
+    icon: Activity,
+    title: "Arbitrage Detection Engine",
+    description: "Automated detection of cross-exchange spreads and fiat/crypto legs for maximum profit.",
     color: "from-fuchsia-400 to-purple-600",
     shadow: "shadow-fuchsia-500/20",
     size: "col-span-1 md:col-span-2 row-span-1",
-  },
-  {
-    id: "risk",
-    icon: ShieldCheck,
-    title: "Risk Management",
-    description: "Track capital flow and isolate paper funds from real world profits.",
-    image: "/features/risk.png",
-    color: "from-rose-400 to-orange-500",
-    shadow: "shadow-rose-500/20",
-    size: "col-span-1 md:col-span-1 row-span-1",
-  },
-  {
-    id: "journal",
-    icon: BookOpen,
-    title: "Trade Journal",
-    description: "Document lessons learned and emotional states during execution.",
-    image: "/features/journal.png",
-    color: "from-blue-400 to-indigo-500",
-    shadow: "shadow-blue-500/20",
-    size: "col-span-1 md:col-span-1 row-span-1",
-  },
+  }
 ];
 
 export default function LandingPage() {
@@ -157,9 +136,9 @@ export default function LandingPage() {
             transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-white drop-shadow-2xl"
           >
-            Command Your <br className="hidden md:block" />
+            The AI Operating System <br className="hidden md:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-cyan-200 to-purple-400 drop-shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-              Arbitrage Edge.
+              for Crypto Arbitrage.
             </span>
           </motion.h1>
           
@@ -169,7 +148,7 @@ export default function LandingPage() {
             transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed font-light"
           >
-            The ultimate 3D intelligence dashboard for P2P traders. Track spreads, simulate risk-free, and analyze performance with KI.
+            Monitor OKX, KuCoin, Bitget, Binance, and Bybit 24/7. Get instant Telegram alerts. Prevent revenge trading with AI psychological scoring.
           </motion.p>
           
           <motion.div 
@@ -212,14 +191,10 @@ export default function LandingPage() {
                   {/* Glassmorphic overlay */}
                   <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent to-black/90 pointer-events-none" />
                   
-                  {/* Dynamic Image Background with 3D Parallax feel */}
+                  {/* Dynamic Gradient Background with 3D Parallax feel */}
                   <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
-                    <img 
-                      src={feature.image} 
-                      alt={feature.title} 
-                      className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-70 group-hover:scale-110 transition-all duration-1000 ease-out"
-                    />
-                    <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-transparent transition-colors duration-500" />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-10 group-hover:opacity-20 transition-all duration-1000 ease-out animate-pulse`} />
+                    <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
 
                   {/* Content */}
@@ -261,8 +236,8 @@ export default function LandingPage() {
             
             <div className="grid md:grid-cols-2 gap-6 text-left">
               {[
-                { title: "AES-256 Encryption", desc: "Military grade database encryption for all stored configurations.", color: "text-blue-400" },
-                { title: "Isolated Environments", desc: "Paper trading simulations are walled off from your real portfolio.", color: "text-cyan-400" }
+                { title: "AES-256 Encrypted Passphrases", desc: "Military grade database encryption for all API keys, secrets, and passphrases.", color: "text-blue-400" },
+                { title: "Isolated Read-Only Access", desc: "The platform only connects to read-only endpoints. It cannot physically withdraw your capital.", color: "text-cyan-400" }
               ].map((item, i) => (
                 <div key={i} className="bg-black/40 border border-white/5 rounded-2xl p-6 shadow-inner">
                   <h3 className={`text-lg font-bold ${item.color} mb-2`}>{item.title}</h3>

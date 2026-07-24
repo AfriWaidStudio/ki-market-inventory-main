@@ -138,6 +138,7 @@ CREATE TABLE public.market_inventory_api_keys (
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   exchange text NOT NULL,
   key_label text NOT NULL,
+    encrypted_passphrase text,
   encrypted_key bytea NOT NULL,
   encrypted_secret bytea NOT NULL,
   permissions text NOT NULL DEFAULT 'read_only' CHECK (permissions = 'read_only'),
@@ -828,4 +829,33 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.market_inventory_exchange_balance
 GRANT ALL ON public.market_inventory_exchange_balances TO service_role;
 ALTER TABLE public.market_inventory_exchange_balances ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "own balances" ON public.market_inventory_exchange_balances FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+
+
+CREATE TABLE public.market_inventory_user_settings (
+    user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    telegram_chat_id text,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.market_inventory_user_settings TO authenticated;
+GRANT ALL ON public.market_inventory_user_settings TO service_role;
+ALTER TABLE public.market_inventory_user_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own settings" ON public.market_inventory_user_settings FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+
+
+CREATE TABLE public.market_inventory_trade_journals (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    trade_id uuid NOT NULL REFERENCES public.market_inventory_trades(id) ON DELETE CASCADE,
+    emotional_state text NOT NULL CHECK (emotional_state IN ('fomo', 'anxious', 'confident', 'neutral', 'tilted')),
+    lessons_learned text NOT NULL,
+    ai_risk_score numeric,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(trade_id)
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.market_inventory_trade_journals TO authenticated;
+GRANT ALL ON public.market_inventory_trade_journals TO service_role;
+ALTER TABLE public.market_inventory_trade_journals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "own journals" ON public.market_inventory_trade_journals FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 

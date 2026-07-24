@@ -4,6 +4,27 @@ const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+async function sendTelegramAlert(userId: string, message: string) {
+  try {
+    const { data } = await supabase.from("market_inventory_user_settings").select("telegram_chat_id").eq("user_id", userId).single();
+    if (!data?.telegram_chat_id) return;
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+      console.log(`[MOCK TELEGRAM] To ${data.telegram_chat_id}: ${message}`);
+      return;
+    }
+
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: data.telegram_chat_id, text: message, parse_mode: "HTML" })
+    });
+  } catch (e) {
+    console.error("Failed to send Telegram alert", e);
+  }
+}
+
 /**
  * Detection Engine
  * Analyzes new exchange events to draw inferences (P2P sells, arbitrage routes).
@@ -54,6 +75,10 @@ export async function analyzeNewEvents(userId: string, newEvents: any[]) {
           events: [fDeposit.id, match.id]
         }
       });
+      
+      if (confidence >= 0.8) {
+        await sendTelegramAlert(userId, `🚨 <b>P2P Sell Detected</b>\nSold ${match.amount} ${match.asset} for ${fDeposit.amount} ${fDeposit.asset}\nConfidence: ${(confidence*100).toFixed(0)}%`);
+      }
     }
   }
 
@@ -85,6 +110,10 @@ export async function analyzeNewEvents(userId: string, newEvents: any[]) {
           events: [w.id, match.id]
         }
       });
+
+      if (confidence >= 0.8) {
+        await sendTelegramAlert(userId, `⚡ <b>Arbitrage Route Completed</b>\nTransferred ${match.amount} ${match.asset}\nConfidence: ${(confidence*100).toFixed(0)}%`);
+      }
     }
   }
 }
