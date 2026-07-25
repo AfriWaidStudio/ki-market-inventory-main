@@ -31,8 +31,10 @@ import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as ApiTelegramWebhookRouteImport } from './routes/api/telegram/webhook'
+import { Route as ApiPaystackWebhookRouteImport } from './routes/api/paystack/webhook'
 import { Route as AuthenticatedTradesTradeIdRouteImport } from './routes/_authenticated/trades.$tradeId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -145,6 +147,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -153,6 +160,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
 const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
   id: '/api/telegram/webhook',
   path: '/api/telegram/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPaystackWebhookRoute = ApiPaystackWebhookRouteImport.update({
+  id: '/api/paystack/webhook',
+  path: '/api/paystack/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTradesTradeIdRoute =
@@ -169,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
@@ -186,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -195,6 +209,7 @@ export interface FileRoutesByTo {
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
@@ -212,6 +227,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRoutesById {
@@ -223,6 +239,7 @@ export interface FileRoutesById {
   '/safety': typeof SafetyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/help': typeof AuthenticatedHelpRoute
@@ -240,6 +257,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/trades/$tradeId': typeof AuthenticatedTradesTradeIdRoute
+  '/api/paystack/webhook': typeof ApiPaystackWebhookRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRouteTypes {
@@ -251,6 +269,7 @@ export interface FileRouteTypes {
     | '/safety'
     | '/terms'
     | '/analytics'
+    | '/billing'
     | '/chat'
     | '/dashboard'
     | '/help'
@@ -268,6 +287,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/auth/callback'
     | '/trades/$tradeId'
+    | '/api/paystack/webhook'
     | '/api/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -277,6 +297,7 @@ export interface FileRouteTypes {
     | '/safety'
     | '/terms'
     | '/analytics'
+    | '/billing'
     | '/chat'
     | '/dashboard'
     | '/help'
@@ -294,6 +315,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/auth/callback'
     | '/trades/$tradeId'
+    | '/api/paystack/webhook'
     | '/api/telegram/webhook'
   id:
     | '__root__'
@@ -304,6 +326,7 @@ export interface FileRouteTypes {
     | '/safety'
     | '/terms'
     | '/_authenticated/analytics'
+    | '/_authenticated/billing'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
     | '/_authenticated/help'
@@ -321,6 +344,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/auth/callback'
     | '/_authenticated/trades/$tradeId'
+    | '/api/paystack/webhook'
     | '/api/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +356,7 @@ export interface RootRouteChildren {
   SafetyRoute: typeof SafetyRoute
   TermsRoute: typeof TermsRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiPaystackWebhookRoute: typeof ApiPaystackWebhookRoute
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
 }
 
@@ -491,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/analytics': {
       id: '/_authenticated/analytics'
       path: '/analytics'
@@ -503,6 +535,13 @@ declare module '@tanstack/react-router' {
       path: '/api/telegram/webhook'
       fullPath: '/api/telegram/webhook'
       preLoaderRoute: typeof ApiTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/paystack/webhook': {
+      id: '/api/paystack/webhook'
+      path: '/api/paystack/webhook'
+      fullPath: '/api/paystack/webhook'
+      preLoaderRoute: typeof ApiPaystackWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/trades/$tradeId': {
@@ -528,6 +567,7 @@ const AuthenticatedTradesRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
@@ -546,6 +586,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHelpRoute: AuthenticatedHelpRoute,
@@ -583,6 +624,7 @@ const rootRouteChildren: RootRouteChildren = {
   SafetyRoute: SafetyRoute,
   TermsRoute: TermsRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiPaystackWebhookRoute: ApiPaystackWebhookRoute,
   ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport

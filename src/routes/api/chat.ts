@@ -14,6 +14,12 @@ export const Route = createFileRoute("/api/chat")({
         const body = (await request.json()) as { messages?: unknown };
         if (!Array.isArray(body.messages))
           return new Response("Messages required", { status: 400 });
+
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: sub } = await (supabaseAdmin as any).from("user_subscriptions").select("tier").eq("user_id", session.user.id).single();
+        if (!sub || sub.tier === "free") {
+          return new Response("Upgrade to Pro to access KI Intelligence", { status: 403 });
+        }
         const grounding = await buildKiGrounding(session.user.id),
           gateway = createLovableAiGatewayProvider(key);
         const result = streamText({

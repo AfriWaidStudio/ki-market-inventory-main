@@ -2,7 +2,7 @@ import { Settings } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -258,16 +258,23 @@ function SettingsPage() {
                         </span>
                         <Badge variant="profit">Live Connected</Badge>
                       </div>
-                      <div className="text-xs font-medium text-slate-500 mt-1">
-                        {syncStatus.isLoading
-                          ? "Querying status…"
-                          : syncStatus.data?.filter(
-                                (s: any) => s.account_id === a.id && s.status === "running",
-                              ).length
-                            ? "Syncing..."
-                            : "Sync offline"}
-                        {syncStatus.data?.find((s: any) => s.account_id === a.id)?.status ===
-                          "completed" && " • Verified"}
+                      <div className="text-xs font-medium text-slate-500 mt-1 w-full max-w-[250px]">
+                        {syncStatus.isLoading ? (
+                          "Querying status…"
+                        ) : (() => {
+                          const runningJob = syncStatus.data?.find(
+                            (s: any) => s.account_id === a.id && s.status === "running"
+                          );
+                          if (runningJob) {
+                            return <SyncProgressTime startedAt={runningJob.started_at} />;
+                          }
+                          const completed = syncStatus.data?.find((s: any) => s.account_id === a.id)?.status === "completed";
+                          return (
+                            <span>
+                              Sync offline {completed && <span className="text-emerald-400 font-bold ml-1">• Verified</span>}
+                            </span>
+                          );
+                        })()}
                         <br />
                         Last sync:{" "}
                         {syncStatus.data?.find((s: any) => s.account_id === a.id)?.completed_at
@@ -494,5 +501,44 @@ function SettingsPage() {
         </Card>
       </div>
     </AppShell>
+  );
+}
+
+function SyncProgressTime({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  const EST_TOTAL = 15; // 15 seconds estimated
+
+  useEffect(() => {
+    const start = new Date(startedAt).getTime();
+    
+    const tick = () => {
+      const now = Date.now();
+      const diff = Math.floor((now - start) / 1000);
+      setElapsed(diff);
+    };
+    
+    tick(); // initial
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [startedAt]);
+
+  const remaining = Math.max(0, EST_TOTAL - Math.max(0, elapsed));
+  const percent = Math.min(100, Math.max(0, Math.round((elapsed / EST_TOTAL) * 100)));
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full mt-2">
+      <div className="flex justify-between items-center text-[10px]">
+        <span className="text-cyan-400 font-bold animate-pulse">Syncing...</span>
+        <span className="text-slate-400 font-mono">
+          {remaining > 0 ? `Est. ${remaining}s` : "Wrapping up..."}
+        </span>
+      </div>
+      <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
+        <div 
+          className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
   );
 }

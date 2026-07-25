@@ -22,6 +22,7 @@ import {
   BrainCircuit,
   Send,
   Zap,
+  CreditCard,
 } from "lucide-react";
 
 const NAV = [
@@ -37,6 +38,7 @@ const NAV = [
   { to: "/chat", label: "Ask KI", icon: MessageSquare },
   { to: "/search", label: "Search", icon: Search },
   { to: "/wallet", label: "Smaisika", icon: Wallet },
+  { to: "/billing", label: "Billing & Tiers", icon: CreditCard },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/help", label: "Help", icon: LifeBuoy },
   { to: "/settings", label: "Settings", icon: Settings },
