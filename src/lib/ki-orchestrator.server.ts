@@ -1,6 +1,15 @@
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
-export async function buildKiGrounding(userId: string) {
+
+interface CacheEntry {
+  data: any;
+  fetchedAt: number;
+  isFetching: boolean;
+}
+const groundingCache = new Map<string, CacheEntry>();
+const CACHE_STALE_TTL_MS = 30 * 1000; // 30 seconds
+
+async function fetchGroundingData(userId: string) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const [
     { data: trades },
@@ -47,6 +56,33 @@ export async function buildKiGrounding(userId: string) {
     recent_5m_market: candles ?? [],
     model_metrics: metrics ?? [],
   };
+}
+
+export async function buildKiGrounding(userId: string) {
+  const now = Date.now();
+  const entry = groundingCache.get(userId);
+
+  if (entry) {
+    const age = now - entry.fetchedAt;
+    if (age > CACHE_STALE_TTL_MS) {
+      // Stale: Return immediately, but revalidate in background
+      if (!entry.isFetching) {
+        entry.isFetching = true;
+        fetchGroundingData(userId).then(data => {
+          groundingCache.set(userId, { data, fetchedAt: Date.now(), isFetching: false });
+        }).catch(err => {
+          console.error("Background SWR refresh failed:", err);
+          entry.isFetching = false;
+        });
+      }
+    }
+    return entry.data;
+  }
+
+  // Not in cache, must fetch synchronously
+  const data = await fetchGroundingData(userId);
+  groundingCache.set(userId, { data, fetchedAt: Date.now(), isFetching: false });
+  return data;
 }
 export function buildKiSystem(grounding: unknown) {
   return `You are Waides KI, a disciplined veteran P2P market operator and decision-support analyst. You never execute trades, move funds, promise profit, or claim certainty. Be concise and skeptical of apparent spreads. Consider executable depth, merchant quality, payment rails, settlement, all fees, transfer risk, bank risk, stale data, and opportunity cost. Deterministic operator plans are authoritative for calculations. Never invent prices or probabilities. If confidence_eligible is false, say the system is calibrating. For position advice state action, venue, executable price and amount, break-even, expected net, evidence, invalidation condition, next check, and missing data. Refuse time-sensitive advice when feeds are stale.\nUSER_AND_MARKET_DATA:\n${JSON.stringify(grounding).slice(0, 50000)}`;

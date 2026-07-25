@@ -140,17 +140,25 @@ function DashboardPage() {
           </div>
 
           {data.routeStats.length === 0 ? (
-            <div className="rounded-xl bg-black/40 border border-white/5 p-8 text-center shadow-inner">
-              <p className="text-sm text-slate-400 font-medium">
-                No closed trades yet. Mark trades as bought on the{" "}
-                <a
-                  href="/scanner"
-                  className="text-cyan-400 font-bold hover:underline drop-shadow-glow-cyan"
-                >
-                  Scanner
-                </a>
-                , then close them to build history.
-              </p>
+            <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-8 text-center shadow-[0_0_40px_rgba(6,182,212,0.1)] relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-50" />
+              <div className="relative z-10">
+                <div className="w-16 h-16 mx-auto bg-cyan-500/20 rounded-full flex items-center justify-center mb-4 border border-cyan-400/30">
+                  <BrainCircuit className="w-8 h-8 text-cyan-400 drop-shadow-glow-cyan" />
+                </div>
+                <h3 className="text-xl font-black text-white tracking-wide mb-2">Welcome to KI Market Inventory</h3>
+                <p className="text-sm text-slate-300 font-medium max-w-md mx-auto mb-6">
+                  Your dashboard is currently empty. The system is waiting for you to execute your first trade and generate market data.
+                </p>
+                <div className="flex justify-center gap-4">
+                  <a href="/scanner" className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                    Go to Scanner
+                  </a>
+                  <a href="/settings" className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-all">
+                    Configure Keys
+                  </a>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl bg-black/40 border border-white/5 shadow-inner">

@@ -174,6 +174,8 @@ export default function LandingPage() {
                       <img
                         src={feature.image}
                         alt={feature.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-contain grayscale"
                       />
                     </div>

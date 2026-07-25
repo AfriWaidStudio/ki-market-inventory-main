@@ -102,8 +102,37 @@ function HistoryPage() {
         </div>
 
         {query.isLoading && page === 0 ? (
-          <div className="p-12 text-center text-sm font-medium text-slate-400 animate-pulse">
-            Querying matrix databanks…
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs font-bold uppercase tracking-wider text-slate-500 bg-black/40">
+                <tr>
+                  <th className="text-left py-4 px-6">Date</th>
+                  <th className="text-left py-4 px-6">Route</th>
+                  <th className="text-center py-4 px-6">Type</th>
+                  <th className="text-right py-4 px-6">Amount</th>
+                  <th className="text-right py-4 px-6">Buy</th>
+                  <th className="text-right py-4 px-6">Sell</th>
+                  <th className="text-right py-4 px-6">P/L</th>
+                  <th className="text-center py-4 px-6">KI Verdict</th>
+                  <th className="text-center py-4 px-6">Status</th>
+                </tr>
+              </thead>
+              <tbody className="tabular-nums font-medium">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i} className="border-t border-white/5">
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-24"></div></td>
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-32"></div></td>
+                    <td className="py-4 px-6"><div className="h-5 bg-white/5 rounded-full animate-pulse w-16 mx-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-20 ml-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-20 ml-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-20 ml-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-4 bg-white/5 rounded animate-pulse w-16 ml-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-5 bg-white/5 rounded-full animate-pulse w-20 mx-auto"></div></td>
+                    <td className="py-4 px-6"><div className="h-5 bg-white/5 rounded-full animate-pulse w-16 mx-auto"></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center text-sm font-medium text-slate-400">
