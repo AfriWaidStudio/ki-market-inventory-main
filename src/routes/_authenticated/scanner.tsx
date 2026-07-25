@@ -264,7 +264,7 @@ function ScannerPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* LIVE OPPORTUNITIES TABLE */}
           <div className="relative group overflow-hidden rounded-[2rem] bg-slate-900/50 backdrop-blur-xl p-8 border border-white/10 shadow-glass">
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />

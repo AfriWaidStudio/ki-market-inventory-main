@@ -130,7 +130,7 @@ function OperatorPage() {
 
         {/* ALERTS & HEALTH */}
         <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-          <section>
+          <section className="min-w-0">
             <h2 className="mb-4 text-sm font-black uppercase tracking-widest text-white drop-shadow-sm flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" /> Active Alerts
             </h2>
