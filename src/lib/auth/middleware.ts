@@ -5,5 +5,7 @@ export const requireAuth = createMiddleware({ type: "function" }).server(async (
   const session = await getCurrentSession();
   if (!session) throw new Error("Unauthorized");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return next({ context: { supabase: supabaseAdmin as any, userId: session.user.id, user: session.user } });
+  return next({
+    context: { supabase: supabaseAdmin as any, userId: session.user.id, user: session.user },
+  });
 });

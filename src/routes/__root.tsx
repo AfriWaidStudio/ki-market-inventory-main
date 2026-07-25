@@ -11,8 +11,8 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AuthProvider } from "../lib/auth";
+import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { AuthProvider } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -22,8 +22,10 @@ function NotFoundComponent() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
       </div>
       <div className="w-full max-w-md relative z-10 text-center">
-        <div className="rounded-[2rem] border border-white/10 bg-slate-900/60 p-12 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_15px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-          <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 drop-shadow-md">404</h1>
+        <div className="rounded-[2rem] border border-white/10 bg-slate-900/60 p-12 shadow-glass-strong backdrop-blur-xl">
+          <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 drop-shadow-md">
+            404
+          </h1>
           <h2 className="mt-6 text-2xl font-bold text-white tracking-tight">Signal Lost</h2>
           <p className="mt-3 text-slate-400 font-medium">
             The opportunity you're looking for doesn't exist on this node.
@@ -56,7 +58,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
       </div>
       <div className="w-full max-w-md relative z-10 text-center">
-        <div className="rounded-[2rem] border border-rose-500/20 bg-slate-900/60 p-12 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_15px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+        <div className="rounded-[2rem] border border-rose-500/20 bg-slate-900/60 p-12 shadow-glass-strong backdrop-blur-xl">
           <h1 className="text-2xl font-black text-white tracking-tight">System Fault Detected</h1>
           <p className="mt-3 text-slate-400 font-medium">
             Something failed to execute on our end. Please recalibrate and try again.
@@ -90,14 +92,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "KI Market Inventory — Waides KI arbitrage command center" },
-      { name: "description", content: "Track P2P and arbitrage trades across Binance, Bybit, OKX. Konsmik Intelligence explains every opportunity. Tracking-only; no auto-execution." },
+      {
+        name: "description",
+        content:
+          "Track P2P and arbitrage trades across Binance, Bybit, OKX. Konsmik Intelligence explains every opportunity. Tracking-only; no auto-execution.",
+      },
       { name: "author", content: "Waides KI" },
       { property: "og:title", content: "KI Market Inventory" },
-      { property: "og:description", content: "P2P & arbitrage command center powered by Konsmik Intelligence." },
+      {
+        property: "og:description",
+        content: "P2P & arbitrage command center powered by Konsmik Intelligence.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -125,13 +140,19 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { LazyMotion } from "framer-motion";
+
+const loadFeatures = () => import("framer-motion").then((res) => res.domAnimation);
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Outlet />
+        <LazyMotion features={loadFeatures} strict>
+          <Outlet />
+        </LazyMotion>
         <Toaster theme="dark" richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>

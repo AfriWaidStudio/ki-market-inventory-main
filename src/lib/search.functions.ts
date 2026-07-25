@@ -11,7 +11,9 @@ export const searchTrades = createServerFn({ method: "POST" })
     const q = data.q.trim();
     let query = context.supabase
       .from("market_inventory_trades")
-      .select("id, asset, amount, buy_exchange, sell_exchange, status, expected_profit, actual_profit, currency, created_at, ki_accuracy_verdict")
+      .select(
+        "id, asset, amount, buy_exchange, sell_exchange, status, expected_profit, actual_profit, currency, created_at, ki_accuracy_verdict",
+      )
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(100);

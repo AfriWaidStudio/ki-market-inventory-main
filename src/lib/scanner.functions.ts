@@ -91,11 +91,11 @@ export const listOpportunities = createServerFn({ method: "POST" })
     for (const b of buys) {
       for (const s of sells) {
         if (b.exchange === s.exchange) continue;
-        
+
         const buyPrice = Number(b.price);
         const sellPrice = Number(s.price);
         const amount = data.amount;
-        
+
         // Fee calculation logic
         // Buy fee: 0.1% taker/maker fee
         const buyFeeFiat = amount * 0.001 * buyPrice;
@@ -103,7 +103,7 @@ export const listOpportunities = createServerFn({ method: "POST" })
         const networkFeeFiat = 1 * sellPrice;
         // Sell fee: 0.1% taker/maker fee on the remaining balance
         const sellFeeFiat = Math.max(0, amount - 1) * 0.001 * sellPrice;
-        
+
         const totalEstFees = buyFeeFiat + networkFeeFiat + sellFeeFiat;
 
         const score = scoreOpportunity({

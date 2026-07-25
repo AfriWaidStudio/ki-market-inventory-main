@@ -285,12 +285,19 @@ async function createTypedTrade(
   if (error) throw new Error(error.message);
 
   const trade = normalizeTrade(row);
-  await recordEvent(context, trade.id, `${tradeType}_trade_opened`, {
-    amount: data.amount,
-    buy_price: data.buy_price,
-    expected_sell_price: data.expected_sell_price,
-    expected_profit: score.netProfit,
-    }, null, trade.stage);
+  await recordEvent(
+    context,
+    trade.id,
+    `${tradeType}_trade_opened`,
+    {
+      amount: data.amount,
+      buy_price: data.buy_price,
+      expected_sell_price: data.expected_sell_price,
+      expected_profit: score.netProfit,
+    },
+    null,
+    trade.stage,
+  );
 
   if (tradeType === "manual") {
     await recordLedger(
@@ -319,12 +326,16 @@ async function createTypedTrade(
 export const createPaperTrade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseCreateInput.parse(data))
-  .handler(async ({ data, context }) => createTypedTrade(context as SupabaseContext, data, "paper"));
+  .handler(async ({ data, context }) =>
+    createTypedTrade(context as SupabaseContext, data, "paper"),
+  );
 
 export const createManualTrade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => BaseCreateInput.parse(data))
-  .handler(async ({ data, context }) => createTypedTrade(context as SupabaseContext, data, "manual"));
+  .handler(async ({ data, context }) =>
+    createTypedTrade(context as SupabaseContext, data, "manual"),
+  );
 
 export const createTrade = createManualTrade;
 
@@ -335,6 +346,7 @@ export const listTrades = createServerFn({ method: "POST" })
     let query = (context as SupabaseContext).supabase
       .from("market_inventory_trades")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", (context as SupabaseContext).userId)
       .order("created_at", { ascending: false });
     if (data.status) query = query.eq("status", data.status);
@@ -359,6 +371,7 @@ export const listTradesPaginated = createServerFn({ method: "POST" })
     let query = (context as SupabaseContext).supabase
       .from("market_inventory_trades")
       .select("*", { count: "exact" })
+      .is("deleted_at", null)
       .eq("user_id", (context as SupabaseContext).userId)
       .order("created_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
@@ -392,33 +405,37 @@ export const getTrade = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const [{ data: notes }, { data: events, error: eventsErr }, { data: fees, error: feesErr }, { data: ledger, error: ledgerErr }] =
-      await Promise.all([
-        ctx.supabase
-          .from("market_inventory_trade_notes")
-          .select("*")
-          .eq("trade_id", data.id)
-          .eq("user_id", ctx.userId)
-          .order("created_at", { ascending: true }),
-        ctx.supabase
-          .from("market_inventory_trade_events")
-          .select("*")
-          .eq("trade_id", data.id)
-          .eq("user_id", ctx.userId)
-          .order("created_at", { ascending: true }),
-        ctx.supabase
-          .from("market_inventory_trade_fees")
-          .select("*")
-          .eq("trade_id", data.id)
-          .eq("user_id", ctx.userId)
-          .order("created_at", { ascending: true }),
-        ctx.supabase
-          .from("market_inventory_capital_ledger")
-          .select("*")
-          .eq("trade_id", data.id)
-          .eq("user_id", ctx.userId)
-          .order("created_at", { ascending: true }),
-      ]);
+    const [
+      { data: notes },
+      { data: events, error: eventsErr },
+      { data: fees, error: feesErr },
+      { data: ledger, error: ledgerErr },
+    ] = await Promise.all([
+      ctx.supabase
+        .from("market_inventory_trade_notes")
+        .select("*")
+        .eq("trade_id", data.id)
+        .eq("user_id", ctx.userId)
+        .order("created_at", { ascending: true }),
+      ctx.supabase
+        .from("market_inventory_trade_events")
+        .select("*")
+        .eq("trade_id", data.id)
+        .eq("user_id", ctx.userId)
+        .order("created_at", { ascending: true }),
+      ctx.supabase
+        .from("market_inventory_trade_fees")
+        .select("*")
+        .eq("trade_id", data.id)
+        .eq("user_id", ctx.userId)
+        .order("created_at", { ascending: true }),
+      ctx.supabase
+        .from("market_inventory_capital_ledger")
+        .select("*")
+        .eq("trade_id", data.id)
+        .eq("user_id", ctx.userId)
+        .order("created_at", { ascending: true }),
+    ]);
 
     return {
       trade,
@@ -469,7 +486,10 @@ export const updateTradePrice = createServerFn({ method: "POST" })
       expected_sell_price: data.expected_sell_price,
       expected_profit: score.netProfit,
     });
-    await audit(ctx, "trade_price_updated", { trade_id: data.id, expected_sell_price: data.expected_sell_price });
+    await audit(ctx, "trade_price_updated", {
+      trade_id: data.id,
+      expected_sell_price: data.expected_sell_price,
+    });
     return { ok: true };
   });
 
@@ -494,7 +514,9 @@ async function closeTypedTrade(
   if (closeAmount > remaining) throw new Error("Close amount exceeds remaining amount");
 
   const sellTime = new Date();
-  const durationMinutes = Math.round((sellTime.getTime() - new Date(trade.buy_time).getTime()) / 60000);
+  const durationMinutes = Math.round(
+    (sellTime.getTime() - new Date(trade.buy_time).getTime()) / 60000,
+  );
   const analysis = analyseClose({
     buyPrice: num(trade.buy_price),
     actualSellPrice: data.actual_sell_price,
@@ -534,7 +556,8 @@ async function closeTypedTrade(
     update.last_event_at = sellTime.toISOString();
   } else {
     if (isFullyClosed) {
-      update.actual_profit = num(tradeRow.actual_profit ?? tradeRow.expected_profit ?? 0) + analysis.actualProfit;
+      update.actual_profit =
+        num(tradeRow.actual_profit ?? tradeRow.expected_profit ?? 0) + analysis.actualProfit;
     }
   }
 
@@ -556,9 +579,16 @@ async function closeTypedTrade(
       currency: trade.currency,
       note: data.notes ?? null,
     });
-    await recordLedger(context, trade, "fee_recorded", -data.final_fees, "Fee recorded during trade close", {
-      amount_sold: closeAmount,
-    });
+    await recordLedger(
+      context,
+      trade,
+      "fee_recorded",
+      -data.final_fees,
+      "Fee recorded during trade close",
+      {
+        amount_sold: closeAmount,
+      },
+    );
   }
 
   await recordLedger(
@@ -576,12 +606,19 @@ async function closeTypedTrade(
     },
   );
 
-  await recordEvent(context, data.id, isFullyClosed ? `${expectedType}_trade_closed` : `${expectedType}_trade_partially_closed`, {
-    amount_sold: closeAmount,
-    actual_sell_price: data.actual_sell_price,
-    actual_profit: analysis.actualProfit,
-    remaining_amount: Math.max(0, nextRemaining),
-  }, trade.stage, nextStage);
+  await recordEvent(
+    context,
+    data.id,
+    isFullyClosed ? `${expectedType}_trade_closed` : `${expectedType}_trade_partially_closed`,
+    {
+      amount_sold: closeAmount,
+      actual_sell_price: data.actual_sell_price,
+      actual_profit: analysis.actualProfit,
+      remaining_amount: Math.max(0, nextRemaining),
+    },
+    trade.stage,
+    nextStage,
+  );
   await audit(context, `${expectedType}_trade_closed`, {
     trade_id: data.id,
     amount_sold: closeAmount,
@@ -589,7 +626,12 @@ async function closeTypedTrade(
     partial: !isFullyClosed,
   });
 
-  return { ok: true, analysis, remaining_amount: Math.max(0, nextRemaining), fully_closed: isFullyClosed };
+  return {
+    ok: true,
+    analysis,
+    remaining_amount: Math.max(0, nextRemaining),
+    fully_closed: isFullyClosed,
+  };
 }
 
 export const closePaperTrade = createServerFn({ method: "POST" })
@@ -600,7 +642,9 @@ export const closePaperTrade = createServerFn({ method: "POST" })
 export const closeManualTrade = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => CloseInput.parse(data))
-  .handler(async ({ data, context }) => closeTypedTrade(context as SupabaseContext, data, "manual"));
+  .handler(async ({ data, context }) =>
+    closeTypedTrade(context as SupabaseContext, data, "manual"),
+  );
 
 export const markClosed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -655,8 +699,15 @@ export const addTradeFee = createServerFn({ method: "POST" })
       fee_type: data.fee_type,
       note: data.note ?? null,
     });
-    await recordEvent(ctx, data.trade_id, "fee_added", { fee_type: data.fee_type, amount: data.amount });
-    await audit(ctx, "trade_fee_added", { trade_id: data.trade_id, fee_type: data.fee_type, amount: data.amount });
+    await recordEvent(ctx, data.trade_id, "fee_added", {
+      fee_type: data.fee_type,
+      amount: data.amount,
+    });
+    await audit(ctx, "trade_fee_added", {
+      trade_id: data.trade_id,
+      fee_type: data.fee_type,
+      amount: data.amount,
+    });
     return { ok: true };
   });
 
@@ -686,8 +737,19 @@ export const updateTradeStage = createServerFn({ method: "POST" })
       .eq("user_id", ctx.userId);
     if (error && !isMissingSchema(error)) throw new Error(error.message);
 
-    await recordEvent(ctx, data.id, "stage_updated", { note: data.note ?? null }, trade.stage, data.stage);
-    await audit(ctx, "trade_stage_updated", { trade_id: data.id, from_stage: trade.stage, to_stage: data.stage });
+    await recordEvent(
+      ctx,
+      data.id,
+      "stage_updated",
+      { note: data.note ?? null },
+      trade.stage,
+      data.stage,
+    );
+    await audit(ctx, "trade_stage_updated", {
+      trade_id: data.id,
+      from_stage: trade.stage,
+      to_stage: data.stage,
+    });
     return { ok: true };
   });
 
@@ -715,7 +777,14 @@ export const cancelTradeTracking = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("user_id", ctx.userId);
     if (error && !isMissingSchema(error)) throw new Error(error.message);
-    await recordEvent(ctx, data.id, "trade_tracking_cancelled", {}, trade?.stage ?? null, "cancelled");
+    await recordEvent(
+      ctx,
+      data.id,
+      "trade_tracking_cancelled",
+      {},
+      trade?.stage ?? null,
+      "cancelled",
+    );
     await audit(ctx, "trade_tracking_cancelled", { trade_id: data.id });
     return { ok: true };
   });
@@ -727,7 +796,12 @@ export const addTradeNote = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => AddNoteInput.parse(data))
   .handler(async ({ data, context }) => {
     const ctx = context as SupabaseContext;
-    const { data: ownedTrade } = await ctx.supabase.from("market_inventory_trades").select("id").eq("id", data.trade_id).eq("user_id", ctx.userId).maybeSingle();
+    const { data: ownedTrade } = await ctx.supabase
+      .from("market_inventory_trades")
+      .select("id")
+      .eq("id", data.trade_id)
+      .eq("user_id", ctx.userId)
+      .maybeSingle();
     if (!ownedTrade) throw new Error("Trade not found");
     const { error } = await ctx.supabase
       .from("market_inventory_trade_notes")
@@ -735,5 +809,20 @@ export const addTradeNote = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     await recordEvent(ctx, data.trade_id, "note_added", { note: data.note.slice(0, 120) });
     await audit(ctx, "trade_note_added", { trade_id: data.trade_id });
+    return { ok: true };
+  });
+
+export const deleteTrade = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => IdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const ctx = context as SupabaseContext;
+    const { error } = await ctx.supabase
+      .from("market_inventory_trades")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .eq("user_id", ctx.userId);
+    if (error && !isMissingSchema(error)) throw new Error(error.message);
+    await audit(ctx, "trade_deleted", { trade_id: data.id });
     return { ok: true };
   });

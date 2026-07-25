@@ -7,12 +7,19 @@ export type AuthContext = {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: string; requiresVerification?: boolean }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName?: string,
+  ) => Promise<{ error?: string; requiresVerification?: boolean }>;
   signOut: () => Promise<void>;
   signInWithOAuth: (provider: "google") => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   confirmEmail: (token: string) => Promise<{ error?: string }>;
-  updateProfile: (data: { displayName?: string; preferredCurrency?: string }) => Promise<{ error?: string }>;
+  updateProfile: (data: {
+    displayName?: string;
+    preferredCurrency?: string;
+  }) => Promise<{ error?: string }>;
 };
 
 export type AuthState = {

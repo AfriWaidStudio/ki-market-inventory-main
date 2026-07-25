@@ -25,11 +25,13 @@ export async function runSyncWorker() {
 
     for (const account of accounts || []) {
       const lastActivity = new Date(account.app_users.updated_at);
-      const isUserActive = (Date.now() - lastActivity.getTime()) < 1000 * 60 * 30; // Active within last 30 mins
-      
+      const isUserActive = Date.now() - lastActivity.getTime() < 1000 * 60 * 30; // Active within last 30 mins
+
       // Adaptive polling frequency: 20s if active, fallback to database setting (or 10m default) if idle
-      const pollingFreqMs = isUserActive ? 20_000 : (account.polling_frequency_seconds || 600) * 1000;
-      
+      const pollingFreqMs = isUserActive
+        ? 20_000
+        : (account.polling_frequency_seconds || 600) * 1000;
+
       // Determine if it's time to sync
       const { data: lastRun } = await supabase
         .from("market_inventory_sync_runs")
@@ -47,7 +49,7 @@ export async function runSyncWorker() {
       }
 
       console.log(`[SyncWorker] Triggering sync for account ${account.id} (${account.exchange})`);
-      
+
       try {
         // Find API key
         const { data: apiKey } = await supabase
@@ -64,8 +66,14 @@ export async function runSyncWorker() {
 
         // Trigger the fetch and analysis pipeline (In a real setup, this runs the actual exchange fetchers)
         // Here we simulate the pipeline to respect the new architectural vision
-        await performSmartFetch(account.user_id, account.id, account.exchange, decKey, decSecret, account.last_sync_cursor);
-
+        await performSmartFetch(
+          account.user_id,
+          account.id,
+          account.exchange,
+          decKey,
+          decSecret,
+          account.last_sync_cursor,
+        );
       } catch (err) {
         console.error(`[SyncWorker] Failed to sync account ${account.id}:`, err);
       }
@@ -75,7 +83,14 @@ export async function runSyncWorker() {
   }
 }
 
-async function performSmartFetch(userId: string, accountId: string, exchange: string, key: string, secret: string, cursor: string | null) {
+async function performSmartFetch(
+  userId: string,
+  accountId: string,
+  exchange: string,
+  key: string,
+  secret: string,
+  cursor: string | null,
+) {
   // Record run start
   await supabase.from("market_inventory_sync_runs").insert({
     user_id: userId,
@@ -109,26 +124,27 @@ async function performSmartFetch(userId: string, accountId: string, exchange: st
       if (error) failed++;
       else imported++;
     }
-    
+
     // Here we would call the Detection Engine:
     // await analyzeNewEvents(userId, newTransactions);
-    
-    await supabase.from("market_inventory_sync_runs")
-      .update({ 
-        status: "completed", 
+
+    await supabase
+      .from("market_inventory_sync_runs")
+      .update({
+        status: "completed",
         completed_at: new Date().toISOString(),
         records_imported: imported,
-        records_failed: failed
+        records_failed: failed,
       })
       .eq("account_id", accountId)
       .eq("status", "running");
-      
   } catch (err: any) {
-    await supabase.from("market_inventory_sync_runs")
-      .update({ 
-        status: "failed", 
+    await supabase
+      .from("market_inventory_sync_runs")
+      .update({
+        status: "failed",
         completed_at: new Date().toISOString(),
-        error_message: err.message || String(err)
+        error_message: err.message || String(err),
       })
       .eq("account_id", accountId)
       .eq("status", "running");

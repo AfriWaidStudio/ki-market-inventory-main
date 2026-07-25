@@ -27,11 +27,14 @@ type NormalizedSnap = {
   merchant_rating: number | null;
 };
 
-const memoryCache = new Map<string, { data: NormalizedSnap[], expires: number, promise?: Promise<NormalizedSnap[]> }>();
+const memoryCache = new Map<
+  string,
+  { data: NormalizedSnap[]; expires: number; promise?: Promise<NormalizedSnap[]> }
+>();
 
 async function fetchWithCache(
   key: string,
-  fetcher: () => Promise<NormalizedSnap[]>
+  fetcher: () => Promise<NormalizedSnap[]>,
 ): Promise<NormalizedSnap[]> {
   const now = Date.now();
   const entry = memoryCache.get(key);
@@ -41,18 +44,24 @@ async function fetchWithCache(
   if (entry?.promise) {
     return entry.promise;
   }
-  const promise = fetcher().then(data => {
-    memoryCache.set(key, { data, expires: Date.now() + 60000 }); // 60 seconds TTL
-    return data;
-  }).catch(e => {
-    memoryCache.delete(key);
-    throw e;
-  });
+  const promise = fetcher()
+    .then((data) => {
+      memoryCache.set(key, { data, expires: Date.now() + 60000 }); // 60 seconds TTL
+      return data;
+    })
+    .catch((e) => {
+      memoryCache.delete(key);
+      throw e;
+    });
   memoryCache.set(key, { data: [], expires: 0, promise });
   return promise;
 }
 
-async function fetchBinance(asset: string, fiat: string, side: "buy" | "sell"): Promise<NormalizedSnap[]> {
+async function fetchBinance(
+  asset: string,
+  fiat: string,
+  side: "buy" | "sell",
+): Promise<NormalizedSnap[]> {
   // tradeType from the TAKER perspective: BUY = user buys USDT from merchant.
   const tradeType = side === "buy" ? "BUY" : "SELL";
   const r = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
@@ -82,10 +91,7 @@ async function fetchBinance(asset: string, fiat: string, side: "buy" | "sell"): 
   if (!price) return [];
   const avgFinish =
     top.reduce((s, r) => s + Number(r.advertiser?.monthFinishRate ?? 0), 0) / top.length;
-  const totalOrders = top.reduce(
-    (s, r) => s + Number(r.advertiser?.monthOrderCount ?? 0),
-    0,
-  );
+  const totalOrders = top.reduce((s, r) => s + Number(r.advertiser?.monthOrderCount ?? 0), 0);
   return [
     {
       exchange: "Binance",
@@ -98,7 +104,11 @@ async function fetchBinance(asset: string, fiat: string, side: "buy" | "sell"): 
   ];
 }
 
-async function fetchBybit(asset: string, fiat: string, side: "buy" | "sell"): Promise<NormalizedSnap[]> {
+async function fetchBybit(
+  asset: string,
+  fiat: string,
+  side: "buy" | "sell",
+): Promise<NormalizedSnap[]> {
   // Bybit side: "1" = merchants SELLING (user buys), "0" = merchants BUYING (user sells)
   const bybitSide = side === "buy" ? "1" : "0";
   const r = await fetch("https://api2.bybit.com/fiat/otc/item/online", {
@@ -130,8 +140,7 @@ async function fetchBybit(asset: string, fiat: string, side: "buy" | "sell"): Pr
   const top = rows.slice(0, 5);
   const price = Number(top[0]?.price ?? 0);
   if (!price) return [];
-  const avgExec =
-    top.reduce((s, r) => s + Number(r.recentExecuteRate ?? 0), 0) / top.length; // 0-100
+  const avgExec = top.reduce((s, r) => s + Number(r.recentExecuteRate ?? 0), 0) / top.length; // 0-100
   const totalOrders = top.reduce((s, r) => s + Number(r.recentOrderNum ?? 0), 0);
   return [
     {
@@ -145,7 +154,11 @@ async function fetchBybit(asset: string, fiat: string, side: "buy" | "sell"): Pr
   ];
 }
 
-async function fetchOkx(asset: string, fiat: string, side: "buy" | "sell"): Promise<NormalizedSnap[]> {
+async function fetchOkx(
+  asset: string,
+  fiat: string,
+  side: "buy" | "sell",
+): Promise<NormalizedSnap[]> {
   // OKX side from merchant POV: side=sell → merchants selling → user buys.
   const okxSide = side === "buy" ? "sell" : "buy";
   const url = `https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=${fiat}&baseCurrency=${asset}&side=${okxSide}&paymentMethod=all&userType=all&showTrade=false&showFollow=false&showAlreadyTraded=false&isAbleFilter=false`;
@@ -162,12 +175,8 @@ async function fetchOkx(asset: string, fiat: string, side: "buy" | "sell"): Prom
   const top = rows.slice(0, 5);
   const price = Number(top[0]?.price ?? 0);
   if (!price) return [];
-  const avgRate =
-    top.reduce((s, r) => s + Number(r.completedRate ?? 0), 0) / top.length;
-  const totalOrders = top.reduce(
-    (s, r) => s + Number(r.completedOrderQuantity ?? 0),
-    0,
-  );
+  const avgRate = top.reduce((s, r) => s + Number(r.completedRate ?? 0), 0) / top.length;
+  const totalOrders = top.reduce((s, r) => s + Number(r.completedOrderQuantity ?? 0), 0);
   return [
     {
       exchange: "OKX",
@@ -184,7 +193,11 @@ export const refreshLivePrices = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .inputValidator((d: unknown) => RefreshInput.parse(d ?? {}))
   .handler(async ({ data, context }) => {
-    const jobs: Array<Promise<{ ok: true; snaps: NormalizedSnap[] } | { ok: false; exchange: string; error: string }>> = [];
+    const jobs: Array<
+      Promise<
+        { ok: true; snaps: NormalizedSnap[] } | { ok: false; exchange: string; error: string }
+      >
+    > = [];
 
     for (const side of ["buy", "sell"] as const) {
       for (const [name, fn] of [
@@ -193,7 +206,9 @@ export const refreshLivePrices = createServerFn({ method: "POST" })
         ["OKX", fetchOkx],
       ] as const) {
         jobs.push(
-          fetchWithCache(`${name}:${data.asset}:${data.fiat}:${side}`, () => fn(data.asset, data.fiat, side))
+          fetchWithCache(`${name}:${data.asset}:${data.fiat}:${side}`, () =>
+            fn(data.asset, data.fiat, side),
+          )
             .then((snaps) => ({ ok: true as const, snaps }))
             .catch((e) => ({
               ok: false as const,
@@ -216,33 +231,73 @@ export const refreshLivePrices = createServerFn({ method: "POST" })
     // If we are in the development sandbox and APIs time out, inject mock data to allow UI testing.
     if (snaps.length === 0 && failures.length > 0) {
       snaps.push(
-        { exchange: "Bybit", side: "buy", price: 1720.50, merchant_count: 45, merchant_rating: 4.8, liquidity_score: 95 },
-        { exchange: "Bybit", side: "sell", price: 1735.00, merchant_count: 32, merchant_rating: 4.6, liquidity_score: 88 },
-        { exchange: "Binance", side: "buy", price: 1718.00, merchant_count: 112, merchant_rating: 4.9, liquidity_score: 99 },
-        { exchange: "Binance", side: "sell", price: 1738.50, merchant_count: 85, merchant_rating: 4.7, liquidity_score: 94 },
-        { exchange: "OKX", side: "buy", price: 1722.00, merchant_count: 24, merchant_rating: 4.5, liquidity_score: 75 },
-        { exchange: "OKX", side: "sell", price: 1730.00, merchant_count: 18, merchant_rating: 4.3, liquidity_score: 65 }
+        {
+          exchange: "Bybit",
+          side: "buy",
+          price: 1720.5,
+          merchant_count: 45,
+          merchant_rating: 4.8,
+          liquidity_score: 95,
+        },
+        {
+          exchange: "Bybit",
+          side: "sell",
+          price: 1735.0,
+          merchant_count: 32,
+          merchant_rating: 4.6,
+          liquidity_score: 88,
+        },
+        {
+          exchange: "Binance",
+          side: "buy",
+          price: 1718.0,
+          merchant_count: 112,
+          merchant_rating: 4.9,
+          liquidity_score: 99,
+        },
+        {
+          exchange: "Binance",
+          side: "sell",
+          price: 1738.5,
+          merchant_count: 85,
+          merchant_rating: 4.7,
+          liquidity_score: 94,
+        },
+        {
+          exchange: "OKX",
+          side: "buy",
+          price: 1722.0,
+          merchant_count: 24,
+          merchant_rating: 4.5,
+          liquidity_score: 75,
+        },
+        {
+          exchange: "OKX",
+          side: "sell",
+          price: 1730.0,
+          merchant_count: 18,
+          merchant_rating: 4.3,
+          liquidity_score: 65,
+        },
       );
       // Clear failures so it simulates a successful fetch
       failures.length = 0;
     }
 
     if (snaps.length) {
-      const { error } = await context.supabase
-        .from("market_inventory_price_snapshots")
-        .insert(
-          snaps.map((s) => ({
-            user_id: context.userId,
-            exchange: s.exchange,
-            asset: data.asset,
-            side: s.side,
-            price: s.price,
-            currency: data.fiat,
-            liquidity_score: s.liquidity_score,
-            merchant_count: s.merchant_count,
-            merchant_rating: s.merchant_rating,
-          })),
-        );
+      const { error } = await context.supabase.from("market_inventory_price_snapshots").insert(
+        snaps.map((s) => ({
+          user_id: context.userId,
+          exchange: s.exchange,
+          asset: data.asset,
+          side: s.side,
+          price: s.price,
+          currency: data.fiat,
+          liquidity_score: s.liquidity_score,
+          merchant_count: s.merchant_count,
+          merchant_rating: s.merchant_rating,
+        })),
+      );
       if (error) throw new Error(error.message);
     }
 
@@ -268,7 +323,9 @@ export const listLatestLivePrices = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("market_inventory_price_snapshots")
-      .select("exchange, side, price, currency, liquidity_score, merchant_count, merchant_rating, captured_at")
+      .select(
+        "exchange, side, price, currency, liquidity_score, merchant_count, merchant_rating, captured_at",
+      )
       .eq("user_id", context.userId)
       .order("captured_at", { ascending: false })
       .limit(60);

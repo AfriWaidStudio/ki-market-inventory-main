@@ -6,7 +6,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function sendTelegramAlert(userId: string, message: string) {
   try {
-    const { data } = await supabase.from("market_inventory_user_settings").select("telegram_chat_id").eq("user_id", userId).single();
+    const { data } = await supabase
+      .from("market_inventory_user_settings")
+      .select("telegram_chat_id")
+      .eq("user_id", userId)
+      .single();
     if (!data?.telegram_chat_id) return;
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -18,7 +22,7 @@ async function sendTelegramAlert(userId: string, message: string) {
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: data.telegram_chat_id, text: message, parse_mode: "HTML" })
+      body: JSON.stringify({ chat_id: data.telegram_chat_id, text: message, parse_mode: "HTML" }),
     });
   } catch (e) {
     console.error("Failed to send Telegram alert", e);
@@ -42,24 +46,32 @@ export async function analyzeNewEvents(userId: string, newEvents: any[]) {
   if (!newEvents.length) return;
 
   // Find fiat deposits or withdrawals (indicative of P2P activity)
-  const fiatEvents = newEvents.filter(e => e.type === "deposit" || e.type === "withdrawal");
-  const cryptoEvents = newEvents.filter(e => e.type === "transfer" || e.type === "trade_settlement");
+  const fiatEvents = newEvents.filter((e) => e.type === "deposit" || e.type === "withdrawal");
+  const cryptoEvents = newEvents.filter(
+    (e) => e.type === "transfer" || e.type === "trade_settlement",
+  );
 
   // Mock pattern: If there's a fiat deposit and a crypto withdrawal around the same time,
   // it might be a P2P Sell.
-  const fiatDeposits = fiatEvents.filter(e => e.type === "deposit" && !['USDT','BTC','ETH'].includes(e.asset));
-  const cryptoWithdrawals = fiatEvents.filter(e => e.type === "withdrawal" && ['USDT','BTC','ETH'].includes(e.asset));
+  const fiatDeposits = fiatEvents.filter(
+    (e) => e.type === "deposit" && !["USDT", "BTC", "ETH"].includes(e.asset),
+  );
+  const cryptoWithdrawals = fiatEvents.filter(
+    (e) => e.type === "withdrawal" && ["USDT", "BTC", "ETH"].includes(e.asset),
+  );
 
   for (const fDeposit of fiatDeposits) {
     // Find a corresponding crypto withdrawal within a 1-hour window
     const dTime = new Date(fDeposit.tx_time).getTime();
-    const match = cryptoWithdrawals.find(c => {
+    const match = cryptoWithdrawals.find((c) => {
       const cTime = new Date(c.tx_time).getTime();
       return Math.abs(dTime - cTime) < 1000 * 60 * 60; // 1 hour
     });
 
     if (match) {
-      const durationMs = Math.abs(new Date(fDeposit.tx_time).getTime() - new Date(match.tx_time).getTime());
+      const durationMs = Math.abs(
+        new Date(fDeposit.tx_time).getTime() - new Date(match.tx_time).getTime(),
+      );
       const confidence = calculateConfidence(durationMs, 1000 * 60 * 15); // Ideal P2P conversion is < 15 mins
 
       // P2P Sell Detected
@@ -72,25 +84,30 @@ export async function analyzeNewEvents(userId: string, newEvents: any[]) {
           crypto_amount: match.amount,
           fiat_asset: fDeposit.asset,
           fiat_amount: fDeposit.amount,
-          events: [fDeposit.id, match.id]
-        }
+          events: [fDeposit.id, match.id],
+        },
       });
-      
+
       if (confidence >= 0.8) {
-        await sendTelegramAlert(userId, `🚨 <b>P2P Sell Detected</b>\nSold ${match.amount} ${match.asset} for ${fDeposit.amount} ${fDeposit.asset}\nConfidence: ${(confidence*100).toFixed(0)}%`);
+        await sendTelegramAlert(
+          userId,
+          `🚨 <b>P2P Sell Detected</b>\nSold ${match.amount} ${match.asset} for ${fDeposit.amount} ${fDeposit.asset}\nConfidence: ${(confidence * 100).toFixed(0)}%`,
+        );
       }
     }
   }
 
   // Detect Arbitrage Routes
   // Logic: Crypto withdrawn from Exchange A and deposited to Exchange B
-  const cryptoDeposits = fiatEvents.filter(e => e.type === "deposit" && ['USDT','BTC','ETH'].includes(e.asset));
-  
+  const cryptoDeposits = fiatEvents.filter(
+    (e) => e.type === "deposit" && ["USDT", "BTC", "ETH"].includes(e.asset),
+  );
+
   for (const w of cryptoWithdrawals) {
     const wTime = new Date(w.tx_time).getTime();
-    const match = cryptoDeposits.find(d => {
+    const match = cryptoDeposits.find((d) => {
       const dTime = new Date(d.tx_time).getTime();
-      return dTime > wTime && (dTime - wTime) < 1000 * 60 * 60 * 2; // within 2 hours
+      return dTime > wTime && dTime - wTime < 1000 * 60 * 60 * 2; // within 2 hours
     });
 
     if (match) {
@@ -107,12 +124,15 @@ export async function analyzeNewEvents(userId: string, newEvents: any[]) {
           from_account: w.account_id,
           to_account: match.account_id,
           duration_ms: new Date(match.tx_time).getTime() - wTime,
-          events: [w.id, match.id]
-        }
+          events: [w.id, match.id],
+        },
       });
 
       if (confidence >= 0.8) {
-        await sendTelegramAlert(userId, `⚡ <b>Arbitrage Route Completed</b>\nTransferred ${match.amount} ${match.asset}\nConfidence: ${(confidence*100).toFixed(0)}%`);
+        await sendTelegramAlert(
+          userId,
+          `⚡ <b>Arbitrage Route Completed</b>\nTransferred ${match.amount} ${match.asset}\nConfidence: ${(confidence * 100).toFixed(0)}%`,
+        );
       }
     }
   }

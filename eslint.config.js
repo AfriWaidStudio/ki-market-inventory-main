@@ -30,6 +30,13 @@ export default tseslint.config(
                 "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
             },
           ],
+          patterns: [
+            {
+              group: ["../*"],
+              message:
+                "Usage of relative parent imports is restricted. Use absolute path aliases like @/ instead.",
+            },
+          ],
         },
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],

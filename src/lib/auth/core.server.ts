@@ -1,5 +1,11 @@
 import { deleteCookie, getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
-export { hashPassword, hashToken, newOpaqueToken, normalizeEmail, verifyPassword } from "./primitives";
+export {
+  hashPassword,
+  hashToken,
+  newOpaqueToken,
+  normalizeEmail,
+  verifyPassword,
+} from "./primitives";
 import { hashToken, newOpaqueToken } from "./primitives";
 
 import type { AuthUser } from "./types";
@@ -17,8 +23,13 @@ export function assertSameOrigin() {
 export function assertRateLimit(bucket: string, limit: number, windowMs: number) {
   const request = getRequest();
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const key = `${bucket}:${ip}`; const now = Date.now(); const current = attempts.get(key);
-  if (!current || current.resetAt <= now) { attempts.set(key, { count: 1, resetAt: now + windowMs }); return; }
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  const current = attempts.get(key);
+  if (!current || current.resetAt <= now) {
+    attempts.set(key, { count: 1, resetAt: now + windowMs });
+    return;
+  }
   if (current.count >= limit) throw new Error("Too many attempts. Please try again later.");
   current.count += 1;
 }
@@ -57,16 +68,28 @@ export async function getCurrentSession(): Promise<{ user: AuthUser; sessionId: 
   const now = new Date().toISOString();
   const { data, error } = await (supabaseAdmin as any)
     .from("auth_sessions")
-    .select("id, user_id, expires_at, revoked_at, app_users(id,email,display_name,status,created_at)")
+    .select(
+      "id, user_id, expires_at, revoked_at, app_users(id,email,display_name,status,created_at)",
+    )
     .eq("token_hash", hashToken(token))
     .maybeSingle();
   const userRow = Array.isArray(data?.app_users) ? data.app_users[0] : data?.app_users;
-  if (error || !data || data.revoked_at || data.expires_at <= now || !userRow || userRow.status !== "active") {
+  if (
+    error ||
+    !data ||
+    data.revoked_at ||
+    data.expires_at <= now ||
+    !userRow ||
+    userRow.status !== "active"
+  ) {
     clearSessionCookie();
     return null;
   }
   const refreshedExpiry = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-  void (supabaseAdmin as any).from("auth_sessions").update({ last_activity_at: now, expires_at: refreshedExpiry }).eq("id", data.id);
+  void (supabaseAdmin as any)
+    .from("auth_sessions")
+    .update({ last_activity_at: now, expires_at: refreshedExpiry })
+    .eq("id", data.id);
   setSessionCookie(token);
   return {
     sessionId: data.id,

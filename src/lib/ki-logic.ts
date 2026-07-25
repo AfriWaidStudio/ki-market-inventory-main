@@ -1,28 +1,5 @@
 // Deterministic scoring logic for Konsmik Intelligence.
-
-export type Recommendation = "buy_now" | "wait" | "watch" | "skip";
-
-export interface OpportunityInput {
-  buyPrice: number;
-  sellPrice: number;
-  amount: number;
-  estimatedFees: number;
-  liquidityScore?: number | null; // 0-100
-  merchantCount?: number | null;
-  merchantRating?: number | null; // 0-5
-}
-
-export interface OpportunityResult {
-  spread: number;
-  spreadPct: number;
-  grossProfit: number;
-  netProfit: number;
-  confidence: number; // 0-100
-  risk: number; // 0-100
-  recommendation: Recommendation;
-  reasoning: string;
-}
-
+import { Recommendation, OpportunityInput, OpportunityResult, CloseAnalysis } from "@/types";
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
@@ -118,15 +95,6 @@ function buildReasoning(r: {
       break;
   }
   return parts.join(" ");
-}
-
-export interface CloseAnalysis {
-  actualProfit: number;
-  expectedProfit: number | null;
-  delta: number | null;
-  verdict: "accurate" | "underestimated" | "overestimated" | "unknown";
-  mistakes: string[];
-  lesson: string;
 }
 
 export function analyseClose(args: {

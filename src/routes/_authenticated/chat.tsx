@@ -3,9 +3,10 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { CyberButton } from "@/components/ui/CyberButton";
-import { CyberInput } from "@/components/ui/CyberInput";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { MessageSquare } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Send, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -19,8 +20,7 @@ function ChatPage() {
 
 function ChatUI() {
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({ api: "/api/chat", credentials: "same-origin" }),
+    () => new DefaultChatTransport({ api: "/api/chat", credentials: "same-origin" }),
     [],
   );
   const { messages, sendMessage, status } = useChat({ transport });
@@ -52,17 +52,24 @@ function ChatUI() {
   ];
 
   return (
-    <AppShell title="Ask Waides KI">
-      <GlassCard className="flex flex-col h-[calc(100vh-11rem)] p-0 lg:p-0">
+    <AppShell
+      title="Ask Waides KI"
+      description="Consult with the KI Intelligence engine."
+      icon={MessageSquare}
+    >
+      <Card variant="glass" className="flex flex-col h-[calc(100vh-11rem)] p-0 lg:p-0">
         <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-600 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center mb-6 border border-white/20">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-600 shadow-glow-cyan flex items-center justify-center mb-6 border border-white/20">
                 <Zap className="w-8 h-8 text-white" fill="currentColor" />
               </div>
-              <h2 className="text-2xl font-black text-white drop-shadow-md tracking-tight">System Initialization</h2>
+              <h2 className="text-2xl font-black text-white drop-shadow-md tracking-tight">
+                System Initialization
+              </h2>
               <p className="mt-3 text-sm text-slate-400 font-medium">
-                Waides KI connects directly to your trading matrix. It answers using your actual tracked trades and live scanner data. It never invents numbers.
+                Waides KI connects directly to your trading matrix. It answers using your actual
+                tracked trades and live scanner data. It never invents numbers.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 {suggestions.map((s) => (
@@ -78,11 +85,12 @@ function ChatUI() {
             </div>
           )}
           {messages.map((m) => {
-            const text = m.parts
-              .map((p) => (p.type === "text" ? p.text : ""))
-              .join("");
+            const text = m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
             return (
-              <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={m.id}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 {m.role !== "user" && (
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center mr-3 mt-1 shrink-0 border border-white/20 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                     <Zap className="w-4 h-4 text-white" />
@@ -107,9 +115,18 @@ function ChatUI() {
               </div>
               <div className="rounded-2xl rounded-tl-sm bg-black/60 border border-cyan-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] px-5 py-4 text-sm text-cyan-400">
                 <span className="inline-flex gap-1.5 items-center h-full">
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_5px_rgba(6,182,212,0.8)]"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </span>
               </div>
             </div>
@@ -123,22 +140,18 @@ function ChatUI() {
           }}
           className="border-t border-white/10 bg-black/20 p-4 flex gap-3 backdrop-blur-xl shrink-0"
         >
-          <CyberInput
+          <Input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Query matrix logs..."
             className="flex-1 mt-0 py-3.5 border-white/20 bg-black/60"
           />
-          <CyberButton
-            type="submit"
-            disabled={!input.trim() || busy}
-            className="px-6 h-full"
-          >
+          <Button type="submit" disabled={!input.trim() || busy} className="px-6 h-full">
             <Send className="w-5 h-5 mr-2 opacity-70" /> {busy ? "Uplinking…" : "Transmit"}
-          </CyberButton>
+          </Button>
         </form>
-      </GlassCard>
+      </Card>
     </AppShell>
   );
 }

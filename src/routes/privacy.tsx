@@ -13,7 +13,9 @@ export const Route = createFileRoute("/privacy")({
 function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 text-sm">
-      <Link to="/" className="text-primary underline">← Back</Link>
+      <Link to="/" className="text-primary underline">
+        ← Back
+      </Link>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight">Privacy</h1>
       <p className="mt-4 text-muted-foreground">
         KI Market Inventory stores only the data you enter or authorize. Your trades, notes, and any
@@ -34,8 +36,8 @@ function PrivacyPage() {
       </ul>
       <h2 className="mt-8 text-lg font-semibold">Your controls</h2>
       <p className="mt-2 text-muted-foreground">
-        You can export or delete your data at any time from Settings. Deleting your account removes all
-        associated records.
+        You can export or delete your data at any time from Settings. Deleting your account removes
+        all associated records.
       </p>
     </main>
   );
